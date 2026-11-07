@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V8.1 | GOLD MOTION
+-- SYLLINSE V8.3 | COLOUR COMMIT
 -- UI-only dashboard build
 --========================================================
 
@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V8.2 SLIDE + COLOUR WHEEL"
+local VERSION = "V8.3 APPLY + CANCEL"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -367,7 +367,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Animated modal colour wheel. Dashboard is hidden while choosing a colour.
+-- Animated modal colour picker with explicit Apply / Cancel behaviour.
 local themeButton = new("TextButton", {
     AnchorPoint=Vector2.new(0.5,1), Position=UDim2.new(0.5,0,1,-12),
     Size=UDim2.new(1,-16,0,32), BackgroundColor3=CARD,
@@ -383,73 +383,101 @@ local pickerShade = new("Frame", {
 },gui)
 local picker = new("Frame", {
     Name="ThemePicker", AnchorPoint=Vector2.new(.5,.5),
-    Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(280,300),
+    Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(300,340),
     BackgroundColor3=PANEL, BorderSizePixel=0, Visible=false, ZIndex=31
 },gui)
 corner(picker,14)
 local pickerStroke=new("UIStroke",{Color=ACCENT,Transparency=.25,Thickness=1},picker)
 new("TextLabel",{
-    Position=UDim2.fromOffset(18,13),Size=UDim2.new(1,-65,0,25),
+    Position=UDim2.fromOffset(18,13),Size=UDim2.new(1,-36,0,25),
     BackgroundTransparency=1,Text="CHOOSE YOUR COLOUR",
     TextColor3=WHITE,Font=Enum.Font.GothamBlack,TextSize=13,
     TextXAlignment=Enum.TextXAlignment.Left,ZIndex=32
 },picker)
-local pickerClose=new("TextButton",{
-    AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-12,0,10),
-    Size=UDim2.fromOffset(30,30),BackgroundColor3=CARD,
-    Text="×",TextColor3=WHITE,Font=Enum.Font.GothamBold,
-    TextSize=20,AutoButtonColor=false,ZIndex=33
-},picker)
-corner(pickerClose,8)
+
+-- The wheel is constrained to a square and rounded to exactly half its size.
 local wheel=new("Frame",{
-    AnchorPoint=Vector2.new(.5,.5),Position=UDim2.new(.5,0,0,155),
+    AnchorPoint=Vector2.new(.5,.5),Position=UDim2.new(.5,0,0,151),
     Size=UDim2.fromOffset(190,190),BackgroundColor3=CARD,
     BorderSizePixel=0,ZIndex=32
 },picker)
-corner(wheel,100)
+new("UIAspectRatioConstraint",{AspectRatio=1,AspectType=Enum.AspectType.ScaleWithParentSize},wheel)
+corner(wheel,95)
 new("UIStroke",{Color=Color3.fromRGB(75,75,75),Transparency=.25,Thickness=1},wheel)
+
 for i=0,71 do
     local angle=(i/72)*math.pi*2-math.pi/2
     local dot=new("Frame",{
         AnchorPoint=Vector2.new(.5,.5),
         Position=UDim2.new(.5,math.cos(angle)*79,.5,math.sin(angle)*79),
         Size=UDim2.fromOffset(13,13),
-        BackgroundColor3=Color3.fromHSV(i/72,.82,.95),
+        BackgroundColor3=Color3.fromHSV(i/72,.88,.98),
         BorderSizePixel=0,ZIndex=34
     },wheel)
-    corner(dot,10)
+    corner(dot,7)
 end
+
 local wheelCenter=new("Frame",{
     AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
     Size=UDim2.fromOffset(108,108),BackgroundColor3=ACCENT,
     BorderSizePixel=0,ZIndex=35
 },wheel)
-corner(wheelCenter,60)
+new("UIAspectRatioConstraint",{AspectRatio=1},wheelCenter)
+corner(wheelCenter,54)
 new("UIStroke",{Color=WHITE,Transparency=.75,Thickness=1},wheelCenter)
 new("TextLabel",{
     AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
     Size=UDim2.new(1,-12,0,28),BackgroundTransparency=1,
-    Text="SYLLINSE",TextColor3=BG,Font=Enum.Font.GothamBlack,
+    Text="PREVIEW",TextColor3=BG,Font=Enum.Font.GothamBlack,
     TextSize=11,ZIndex=36
 },wheelCenter)
-new("TextLabel",{
-    AnchorPoint=Vector2.new(.5,1),Position=UDim2.new(.5,0,1,-10),
-    Size=UDim2.new(1,-24,0,18),BackgroundTransparency=1,
-    Text="TAP OR DRAG AROUND THE WHEEL",TextColor3=MUTED,
-    Font=Enum.Font.GothamBold,TextSize=8,ZIndex=32
+
+-- Transparent input layer keeps every part of the wheel selectable on touch.
+local wheelInput=new("TextButton",{
+    Name="WheelInput",Size=UDim2.fromScale(1,1),
+    BackgroundTransparency=1,Text="",AutoButtonColor=false,ZIndex=37
+},wheel)
+
+local pickerHint=new("TextLabel",{
+    Position=UDim2.new(0,12,0,250),Size=UDim2.new(1,-24,0,16),
+    BackgroundTransparency=1,Text="SELECT A SHADE, THEN CONFIRM",
+    TextColor3=MUTED,Font=Enum.Font.GothamBold,TextSize=8,ZIndex=32
 },picker)
 
-local hue,wheelDragging=.12,false
+local doneButton=new("TextButton",{
+    Position=UDim2.new(0,14,0,278),Size=UDim2.new(.5,-20,0,38),
+    BackgroundColor3=ACCENT,Text="DONE",
+    TextColor3=BG,Font=Enum.Font.GothamBlack,TextSize=11,
+    AutoButtonColor=false,ZIndex=33
+},picker)
+corner(doneButton,8)
+local cancelButton=new("TextButton",{
+    AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-14,0,278),
+    Size=UDim2.new(.5,-20,0,38),BackgroundColor3=CARD,
+    Text="CLOSE",TextColor3=WHITE,Font=Enum.Font.GothamBold,
+    TextSize=11,AutoButtonColor=false,ZIndex=33
+},picker)
+corner(cancelButton,8)
+new("UIStroke",{Color=MUTED,Transparency=.65,Thickness=1},cancelButton)
+
+local hue=.12
+local wheelDragging=false
+local committedAccent=ACCENT
 local function applyAccent(color)
     ACCENT=color
     tween(logo,.16,{TextColor3=color})
     tween(themeButton,.16,{TextColor3=color})
     tween(mainStroke,.16,{Color=color})
     tween(pickerStroke,.16,{Color=color})
-    tween(wheelCenter,.16,{BackgroundColor3=color})
+    tween(wheelCenter,.12,{BackgroundColor3=color})
+    tween(doneButton,.12,{BackgroundColor3=color})
+    local floatingButton=gui:FindFirstChild("FloatingToggle")
+    if floatingButton then tween(floatingButton,.16,{BackgroundColor3=color}) end
     for _,data in pairs(tabs) do
         tween(data.indicator,.16,{BackgroundColor3=color})
-        if data.name==currentTab then tween(data.button,.16,{TextColor3=color}) end
+        if data.name=="Home" then
+            -- Selected tab text is refreshed by the tab handler.
+        end
     end
     for _,obj in ipairs(gui:GetDescendants()) do
         if obj:IsA("UIStroke") then obj.Color=color end
@@ -460,40 +488,56 @@ local function applyAccent(color)
     sessionValue.TextColor3=color
     launchValue.TextColor3=color
 end
+
 local function setWheelColor(point)
     local center=wheel.AbsolutePosition+wheel.AbsoluteSize/2
     local delta=point-center
     local angle=math.atan2(delta.Y,delta.X)
     hue=(angle/(math.pi*2)+.25)%1
     local radius=math.clamp(delta.Magnitude/(wheel.AbsoluteSize.X/2),.18,1)
-    applyAccent(Color3.fromHSV(hue,math.clamp(.35+radius*.62,.35,.97),.96))
+    local saturation=math.clamp(.35+radius*.62,.35,.97)
+    applyAccent(Color3.fromHSV(hue,saturation,.96))
 end
+
 local function openPicker()
     if picker.Visible then return end
+    committedAccent=ACCENT
     main.Visible=false
     picker.Visible=true
     pickerShade.Visible=true
     pickerShade.BackgroundTransparency=1
-    tween(pickerShade,.24,{BackgroundTransparency=.28})
-    picker.Size=UDim2.fromOffset(250,270)
+    tween(pickerShade,.22,{BackgroundTransparency=.28})
+    picker.Size=UDim2.fromOffset(270,310)
     picker.BackgroundTransparency=1
-    tween(picker,.28,{Size=UDim2.fromOffset(280,300),BackgroundTransparency=0},Enum.EasingStyle.Back)
+    tween(picker,.26,{Size=UDim2.fromOffset(300,340),BackgroundTransparency=0},Enum.EasingStyle.Back)
 end
-local function closePicker()
-    if not picker.Visible then return end
-    tween(pickerShade,.2,{BackgroundTransparency=1})
-    tween(picker,.18,{Size=UDim2.fromOffset(250,270),BackgroundTransparency=1})
-    task.delay(.2,function()
+
+local pickerClosing=false
+local function finishPicker(keepSelection)
+    if not picker.Visible or pickerClosing then return end
+    pickerClosing=true
+    if keepSelection then
+        committedAccent=ACCENT
+    else
+        applyAccent(committedAccent)
+    end
+    tween(pickerShade,.18,{BackgroundTransparency=1})
+    tween(picker,.18,{Size=UDim2.fromOffset(270,310),BackgroundTransparency=1})
+    task.delay(.19,function()
         picker.Visible=false
         pickerShade.Visible=false
         main.Visible=true
-        picker.Size=UDim2.fromOffset(280,300)
+        picker.Size=UDim2.fromOffset(300,340)
         picker.BackgroundTransparency=0
+        pickerClosing=false
     end)
 end
+
 themeButton.Activated:Connect(openPicker)
-pickerClose.Activated:Connect(closePicker)
-wheel.InputBegan:Connect(function(input)
+doneButton.Activated:Connect(function() finishPicker(true) end)
+cancelButton.Activated:Connect(function() finishPicker(false) end)
+
+wheelInput.InputBegan:Connect(function(input)
     if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
         wheelDragging=true
         setWheelColor(input.Position)
@@ -505,7 +549,9 @@ UIS.InputChanged:Connect(function(input)
     end
 end)
 UIS.InputEnded:Connect(function(input)
-    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then wheelDragging=false end
+    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
+        wheelDragging=false
+    end
 end)
 
 -- Tabs slide horizontally and support left/right touch swipes.
@@ -600,7 +646,11 @@ local function setOpen(state)
         setFade(mainFadeTargets,0,1.45)
         task.delay(1.48,function() animating=false end)
     else
-        popup.Visible=false
+        if picker.Visible then
+            picker.Visible=false
+            pickerShade.Visible=false
+            pickerClosing=false
+        end
         tween(backdrop,1.45,{BackgroundTransparency=1})
         setFade(mainFadeTargets,1,1.45)
         task.delay(1.48,function()
