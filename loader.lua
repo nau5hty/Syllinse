@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V8.3 | COLOUR COMMIT
+-- SYLLINSE V8.4 | MOBILE INPUT FIX
 -- UI-only dashboard build
 --========================================================
 
@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V8.3 APPLY + CANCEL"
+local VERSION = "V8.4 MOBILE FIX"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -433,11 +433,6 @@ new("TextLabel",{
 },wheelCenter)
 
 -- Transparent input layer keeps every part of the wheel selectable on touch.
-local wheelInput=new("TextButton",{
-    Name="WheelInput",Size=UDim2.fromScale(1,1),
-    BackgroundTransparency=1,Text="",AutoButtonColor=false,ZIndex=37
-},wheel)
-
 local pickerHint=new("TextLabel",{
     Position=UDim2.new(0,12,0,250),Size=UDim2.new(1,-24,0,16),
     BackgroundTransparency=1,Text="SELECT A SHADE, THEN CONFIRM",
@@ -537,14 +532,25 @@ themeButton.Activated:Connect(openPicker)
 doneButton.Activated:Connect(function() finishPicker(true) end)
 cancelButton.Activated:Connect(function() finishPicker(false) end)
 
-wheelInput.InputBegan:Connect(function(input)
+local function pointInside(guiObject, point)
+    local p=guiObject.AbsolutePosition
+    local z=guiObject.AbsoluteSize
+    return point.X>=p.X and point.X<=p.X+z.X and point.Y>=p.Y and point.Y<=p.Y+z.Y
+end
+
+-- Global coordinate hit-testing is reliable for touch screens and mouse input.
+UIS.InputBegan:Connect(function(input)
+    if not picker.Visible then return end
     if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
-        wheelDragging=true
-        setWheelColor(input.Position)
+        if pointInside(wheel,input.Position) then
+            wheelDragging=true
+            setWheelColor(input.Position)
+        end
     end
 end)
 UIS.InputChanged:Connect(function(input)
-    if wheelDragging and (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseMovement) then
+    if wheelDragging and picker.Visible and
+        (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseMovement) then
         setWheelColor(input.Position)
     end
 end)
@@ -553,6 +559,7 @@ UIS.InputEnded:Connect(function(input)
         wheelDragging=false
     end
 end)
+
 
 -- Tabs slide horizontally and support left/right touch swipes.
 local currentTab="Home"
@@ -632,36 +639,37 @@ UIS.InputEnded:Connect(function(input)
     if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then dragging=false end
 end)
 
--- Full-window fade, including every tab, card, label and control.
+-- Reliable hide/reopen controls.
+-- The X hides the dashboard; the floating S restores it.
 local mainFadeTargets=collectFadeTargets(main)
-local open=true
 local animating=false
-local function setOpen(state)
-    if animating or open==state then return end
-    open=state
+local function hideWindow()
+    if animating or not main.Visible then return end
     animating=true
-    if state then
-        main.Visible=true
-        setFade(mainFadeTargets,1,0)
-        tween(backdrop,1.45,{BackgroundTransparency=.43})
-        setFade(mainFadeTargets,0,1.45)
-        task.delay(1.48,function() animating=false end)
-    else
-        if picker.Visible then
-            picker.Visible=false
-            pickerShade.Visible=false
-            pickerClosing=false
-        end
-        tween(backdrop,1.45,{BackgroundTransparency=1})
-        setFade(mainFadeTargets,1,1.45)
-        task.delay(1.48,function()
-            main.Visible=false
-            animating=false
-        end)
+    if picker.Visible then
+        picker.Visible=false
+        pickerShade.Visible=false
+        pickerClosing=false
+        wheelDragging=false
     end
+    tween(backdrop,.22,{BackgroundTransparency=1})
+    setFade(mainFadeTargets,1,.22)
+    task.delay(.24,function()
+        main.Visible=false
+        animating=false
+    end)
 end
-close.Activated:Connect(function() setOpen(false) end)
-floating.Activated:Connect(function() setOpen(not open) end)
+local function showWindow()
+    if animating or main.Visible then return end
+    animating=true
+    main.Visible=true
+    setFade(mainFadeTargets,1,0)
+    tween(backdrop,.22,{BackgroundTransparency=.43})
+    setFade(mainFadeTargets,0,.22)
+    task.delay(.24,function() animating=false end)
+end
+close.Activated:Connect(hideWindow)
+floating.Activated:Connect(showWindow)
 
 -- Responsive sizing
 local scale=new("UIScale",{Scale=1},main)
