@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V8.8 | SMOOTH COLOUR WHEEL
+-- SYLLINSE V8.9 | CONTINUOUS COLOUR DISC
 -- UI-only dashboard build
 --========================================================
 
@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V8.8 SMOOTH COLOUR WHEEL"
+local VERSION = "V8.9 CONTINUOUS COLOUR DISC"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -445,21 +445,21 @@ local function currentColor()
     return Color3.fromHSV(hue,saturation,brightness)
 end
 
--- Smooth radial colour disc built from overlapping gradient slices.
--- Each narrow slice blends from white at the centre to its hue at the rim.
-for i=0,359 do
-    local angle=i
+-- Continuous radial HSV disc. Dense overlapping gradient strips create a
+-- solid colour field rather than a grid of separate dots.
+for i=0,719 do
+    local angle=i*0.5
     local hueValue=((angle/360)+.75)%1
     local slice=new("Frame",{
         AnchorPoint=Vector2.new(.5,1),
         Position=UDim2.new(.5,0,.5,0),
-        Size=UDim2.fromOffset(2.4,96),
+        Size=UDim2.fromOffset(2.2,96),
         Rotation=angle,
         BackgroundColor3=Color3.new(1,1,1),
         BorderSizePixel=0,
         ZIndex=33
     },wheel)
-    local gradient=new("UIGradient",{
+    new("UIGradient",{
         Rotation=90,
         Color=ColorSequence.new({
             ColorSequenceKeypoint.new(0,Color3.fromHSV(hueValue,1,1)),
