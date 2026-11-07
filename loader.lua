@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V9.1 | TRUE RADIAL HSV COLOUR DISC
+-- SYLLINSE V9.2 | NATIVE CONICAL COLOUR WHEEL + 1.2S FADE
 -- UI-only dashboard build
 --========================================================
 
@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V9.1 TRUE RADIAL HSV COLOUR DISC"
+local VERSION = "V9.2 NATIVE COLOUR WHEEL"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -445,41 +445,54 @@ local function currentColor()
     return Color3.fromHSV(hue,saturation,brightness)
 end
 
--- Smooth radial HSV disc rendered as narrow vertical columns.
--- Each column has its own sampled vertical colour gradient, producing a
--- genuinely filled 2D colour field without pinwheel wedges or dot gaps.
-local wheelPixels=204
-local wheelRadius=wheelPixels/2-1
-local columnCount=144
-local columnWidth=wheelPixels/columnCount+0.35
-for column=0,columnCount-1 do
-    local px=(column+.5)*wheelPixels/columnCount
-    local nx=(px-wheelPixels/2)/wheelRadius
-    local inside=1-nx*nx
-    if inside>0 then
-        local halfHeight=math.sqrt(inside)*wheelRadius
-        local frameHeight=halfHeight*2
-        local keypoints={}
-        for sample=0,18 do
-            local t=sample/18
-            local ny=((t-.5)*2*halfHeight)/wheelRadius
-            local radial=math.clamp(math.sqrt(nx*nx+ny*ny),0,1)
-            local angle=(math.atan2(ny,nx)/(math.pi*2))%1
-            local colour=Color3.fromHSV(angle,radial,1)
-            keypoints[#keypoints+1]=ColorSequenceKeypoint.new(t,colour)
-        end
-        local columnFrame=new("Frame",{
-            Position=UDim2.fromOffset(px-columnWidth/2,wheelPixels/2-halfHeight),
-            Size=UDim2.fromOffset(columnWidth,frameHeight),
-            BackgroundColor3=WHITE,
-            BorderSizePixel=0,
-            ZIndex=33
-        },wheel)
-        new("UIGradient",{
-            Rotation=90,
-            Color=ColorSequence.new(keypoints)
-        },columnFrame)
-    end
+-- Native circular HSV wheel using Roblox's conical + radial UIGradient types.
+-- Conical gradient provides the continuous rainbow hue sweep.
+-- A radial white overlay fades from white at the centre to transparent at the rim.
+local hueLayer=new("Frame",{
+    Name="HueRing",
+    Size=UDim2.fromScale(1,1),
+    BackgroundColor3=WHITE,
+    BorderSizePixel=0,
+    ZIndex=33
+},wheel)
+corner(hueLayer,102)
+
+local hueGradient=new("UIGradient",{
+    Color=ColorSequence.new({
+        ColorSequenceKeypoint.new(0.000,Color3.fromRGB(255,0,0)),
+        ColorSequenceKeypoint.new(0.167,Color3.fromRGB(255,255,0)),
+        ColorSequenceKeypoint.new(0.333,Color3.fromRGB(0,255,0)),
+        ColorSequenceKeypoint.new(0.500,Color3.fromRGB(0,255,255)),
+        ColorSequenceKeypoint.new(0.667,Color3.fromRGB(0,0,255)),
+        ColorSequenceKeypoint.new(0.833,Color3.fromRGB(255,0,255)),
+        ColorSequenceKeypoint.new(1.000,Color3.fromRGB(255,0,0))
+    }),
+    Rotation=90
+},hueLayer)
+local conicalSupported=pcall(function()
+    hueGradient.Type=Enum.GradientType.Conical
+end)
+
+local saturationLayer=new("Frame",{
+    Name="WhiteSaturationFade",
+    Size=UDim2.fromScale(1,1),
+    BackgroundColor3=Color3.new(1,1,1),
+    BorderSizePixel=0,
+    ZIndex=34
+},wheel)
+corner(saturationLayer,102)
+local saturationGradient=new("UIGradient",{
+    Transparency=NumberSequence.new({
+        NumberSequenceKeypoint.new(0,0),
+        NumberSequenceKeypoint.new(1,1)
+    })
+},saturationLayer)
+local radialSupported=pcall(function()
+    saturationGradient.Type=Enum.GradientType.Radial
+end)
+
+if not conicalSupported or not radialSupported then
+    warn("[SYLLINSE] Native radial/conical UIGradient is unavailable in this client.")
 end
 
 wheelCenter=new("Frame",{
@@ -754,10 +767,13 @@ local function hideWindow()
     pickerShade.Visible=false
     pickerClosing=false
     wheelDragging=false
-    tween(backdrop,.22,{BackgroundTransparency=1})
-    setFade(mainFadeTargets,1,.22)
-    task.delay(.24,function()
+    local shownScale=scale.Scale
+    tween(backdrop,1.2,{BackgroundTransparency=1},Enum.EasingStyle.Quart)
+    tween(scale,1.2,{Scale=shownScale*.96},Enum.EasingStyle.Quart)
+    setFade(mainFadeTargets,1,1.2)
+    task.delay(1.22,function()
         main.Visible=false
+        scale.Scale=shownScale
         animating=false
     end)
 end
@@ -765,10 +781,13 @@ local function showWindow()
     if animating or main.Visible or picker.Visible then return end
     animating=true
     main.Visible=true
+    local shownScale=scale.Scale
+    scale.Scale=shownScale*.96
     setFade(mainFadeTargets,1,0)
-    tween(backdrop,.22,{BackgroundTransparency=.43})
-    setFade(mainFadeTargets,0,.22)
-    task.delay(.24,function() animating=false end)
+    tween(backdrop,1.2,{BackgroundTransparency=.43},Enum.EasingStyle.Quart)
+    tween(scale,1.2,{Scale=shownScale},Enum.EasingStyle.Quart)
+    setFade(mainFadeTargets,0,1.2)
+    task.delay(1.22,function() animating=false end)
 end
 close.Activated:Connect(hideWindow)
 -- Drag the floating toggle anywhere on screen. A short tap still toggles it.
