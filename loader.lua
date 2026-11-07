@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V8.5 | TOUCH WHEEL + TOGGLE
+-- SYLLINSE V8.6 | MOBILE INPUT FIX
 -- UI-only dashboard build
 --========================================================
 
@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V8.5 TOUCH + MOTION"
+local VERSION = "V8.6 MOBILE INPUT FIX"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -444,15 +444,28 @@ for i=0,71 do
     local dot=new("TextButton",{
         AnchorPoint=Vector2.new(.5,.5),
         Position=UDim2.new(.5,math.cos(angle)*79,.5,math.sin(angle)*79),
-        Size=UDim2.fromOffset(17,17),
+        Size=UDim2.fromOffset(20,20),
         BackgroundColor3=Color3.fromHSV(hueValue,.88,.98),
-        BorderSizePixel=0,Text="",AutoButtonColor=false,ZIndex=34
+        BorderSizePixel=0,Text="",AutoButtonColor=false,Active=true,Interactable=true,ZIndex=45
     },wheel)
     corner(dot,9)
     dot.Activated:Connect(function()
         chooseHue(hueValue)
     end)
 end
+
+-- Mobile touch fallback: map a tap on the colour ring directly to a hue.
+UIS.InputBegan:Connect(function(input)
+    if not picker.Visible or input.UserInputType~=Enum.UserInputType.Touch then return end
+    local point=Vector2.new(input.Position.X,input.Position.Y)
+    local center=wheel.AbsolutePosition+wheel.AbsoluteSize/2
+    local delta=point-center
+    local radius=delta.Magnitude
+    if radius>=56 and radius<=96 then
+        local angle=math.atan2(delta.Y,delta.X)
+        chooseHue(((angle+math.pi/2)/(math.pi*2))%1)
+    end
+end)
 
 wheelCenter=new("Frame",{
     AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
@@ -584,7 +597,7 @@ local floating=new("TextButton",{
     AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,-12,.5,0),
     Size=UDim2.fromOffset(44,44),BackgroundColor3=ACCENT,
     Text="S",TextColor3=BG,Font=Enum.Font.GothamBlack,
-    TextSize=20,AutoButtonColor=false,ZIndex=20
+    TextSize=20,AutoButtonColor=false,Active=true,Interactable=true,ZIndex=60
 },gui)
 corner(floating,22)
 
@@ -612,14 +625,12 @@ end)
 local mainFadeTargets=collectFadeTargets(main)
 local animating=false
 local function hideWindow()
-    if animating or not main.Visible then return end
+    if animating or (not main.Visible and not picker.Visible) then return end
     animating=true
-    if picker.Visible then
-        picker.Visible=false
-        pickerShade.Visible=false
-        pickerClosing=false
-        wheelDragging=false
-    end
+    picker.Visible=false
+    pickerShade.Visible=false
+    pickerClosing=false
+    wheelDragging=false
     tween(backdrop,.22,{BackgroundTransparency=1})
     setFade(mainFadeTargets,1,.22)
     task.delay(.24,function()
@@ -628,7 +639,7 @@ local function hideWindow()
     end)
 end
 local function showWindow()
-    if animating or main.Visible then return end
+    if animating or main.Visible or picker.Visible then return end
     animating=true
     main.Visible=true
     setFade(mainFadeTargets,1,0)
@@ -638,7 +649,7 @@ local function showWindow()
 end
 close.Activated:Connect(hideWindow)
 floating.Activated:Connect(function()
-    if main.Visible then
+    if main.Visible or picker.Visible then
         hideWindow()
     else
         showWindow()
