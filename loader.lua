@@ -665,7 +665,13 @@ applyAccent(GOLD)
 local initialFade=collectFadeTargets(main)
 setFade(initialFade,1,0)
 backdrop.BackgroundTransparency=1
-tween(backdrop,1.45,{BackgroundTransparency=.43})
-setFade(initialFade,0,1.45)
+local finalPosition=UDim2.new(0.5,-285,0.5,-180)
+main.Position=UDim2.new(0.5,-285,0.5,-166)
+local finalScale=scale.Scale
+scale.Scale=finalScale*.96
+tween(backdrop,.8,{BackgroundTransparency=.43},Enum.EasingStyle.Quart)
+tween(main,.8,{Position=finalPosition},Enum.EasingStyle.Quart)
+tween(scale,.8,{Scale=finalScale},Enum.EasingStyle.Quart)
+setFade(initialFade,0,.8)
 
 print("[SYLLINSE] "..VERSION.." loaded")
