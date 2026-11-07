@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V9.6 | ATTACHED EQUAL-SIZE DOCK + REOPEN FIX
+-- SYLLINSE V9.7 | UPWARD DOCK + TOGGLE ROTATION
 -- UI-only dashboard build
 --========================================================
 
@@ -742,10 +742,10 @@ local floating=new("TextButton",{
 },gui)
 corner(floating,22)
 
--- Compact vertical dock: same 44px footprint as the floating toggle, attached edge-to-edge.
+-- Dock rises above the toggle; its lower edge meets the toggle's vertical midpoint.
 local dock=new("Frame",{
     Name="FloatingNavigationDock",
-    AnchorPoint=Vector2.new(1,.5),
+    AnchorPoint=Vector2.new(.5,1),
     Position=UDim2.fromOffset(0,0),
     Size=UDim2.fromOffset(44,176),
     BackgroundTransparency=1,
@@ -890,13 +890,15 @@ local function revealDock()
     if animating then return end
     local togglePos=floating.AbsolutePosition
     local toggleSize=floating.AbsoluteSize
-    local endX=togglePos.X
+    local centerX=togglePos.X+toggleSize.X/2
     local centerY=togglePos.Y+toggleSize.Y/2
-    dock.AnchorPoint=Vector2.new(1,.5)
-    dock.Position=UDim2.fromOffset(endX+48,centerY)
+    -- The dock grows upward from behind the toggle; the toggle covers its lower half.
+    dock.AnchorPoint=Vector2.new(.5,1)
+    dock.Position=UDim2.fromOffset(centerX,centerY+44)
     dock.Visible=true
     dockScale.Scale=1
-    tween(dock,.42,{Position=UDim2.fromOffset(endX,centerY)},Enum.EasingStyle.Quart)
+    tween(floating,.46,{Rotation=180},Enum.EasingStyle.Quart)
+    tween(dock,.46,{Position=UDim2.fromOffset(centerX,centerY)},Enum.EasingStyle.Quart)
 end
 
 floating.InputBegan:Connect(function(input)
@@ -913,8 +915,9 @@ floating.InputBegan:Connect(function(input)
         if floatingDragging and floatingPress and holdToken==thisToken and not floatingMoved then
             holdTriggered=true
             if dock.Visible then
-                tween(dockScale,.16,{Scale=.88})
-                task.delay(.17,function() if dock.Parent then dock.Visible=false end end)
+                tween(dockScale,.2,{Scale=.88})
+                tween(floating,.32,{Rotation=0},Enum.EasingStyle.Quart)
+                task.delay(.21,function() if dock.Parent then dock.Visible=false end end)
             else
                 revealDock()
             end
@@ -958,6 +961,7 @@ UIS.InputEnded:Connect(function(input)
     -- A short, unmoved tap is the ONLY gesture that toggles the main window.
     if not wasMoved and not wasHeld then
         dock.Visible=false
+        tween(floating,.28,{Rotation=0},Enum.EasingStyle.Quart)
         if main.Visible or picker.Visible then
             hideWindow()
         else
