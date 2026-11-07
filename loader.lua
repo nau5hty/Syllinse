@@ -176,10 +176,14 @@ local pages, tabs, cards = {}, {}, {}
 local tabInfo = {{"Home","⌂"},{"Player","◉"},{"Visuals","◈"},{"Settings","⚙"},{"About","ⓘ"}}
 
 local function createPage(name)
-    local page = new("Frame", {
+    local page = new("ScrollingFrame", {
         Name=name, Position=UDim2.fromOffset(0,39),
         Size=UDim2.new(1,0,1,-39), BackgroundTransparency=1,
-        ClipsDescendants=true, Visible=false, ZIndex=4
+        ClipsDescendants=true, CanvasSize=UDim2.fromOffset(0,0),
+        AutomaticCanvasSize=Enum.AutomaticSize.Y,
+        ScrollingDirection=Enum.ScrollingDirection.Y,
+        ScrollBarThickness=3, ScrollBarImageColor3=ACCENT,
+        Visible=false, ZIndex=4
     }, content)
     new("UIGridLayout", {
         CellSize=UDim2.new(0.5,-6,0,75),
@@ -538,7 +542,7 @@ for name,data in pairs(tabs) do
 end
 local swipeStart=nil
 UIS.InputBegan:Connect(function(input,processed)
-    if processed or not main.Visible or picker.Visible or input.UserInputType~=Enum.UserInputType.Touch then return end
+    if not main.Visible or picker.Visible or input.UserInputType~=Enum.UserInputType.Touch then return end
     local p=input.Position
     local pos,size=content.AbsolutePosition,content.AbsoluteSize
     if p.X>=pos.X and p.X<=pos.X+size.X and p.Y>=pos.Y and p.Y<=pos.Y+size.Y then swipeStart=p end
