@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V9.4 | HOLD-TO-REVEAL DOCK + TOGGLE FIX
+-- SYLLINSE V9.6 | ATTACHED EQUAL-SIZE DOCK + REOPEN FIX
 -- UI-only dashboard build
 --========================================================
 
