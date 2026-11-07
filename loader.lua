@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V9.9 | DOCK LOCK + GOLD GLOW
+-- SYLLINSE V10.0 | NOIR REFINED REDESIGN
 -- UI-only dashboard build
 --========================================================
 
@@ -15,11 +15,11 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V9.9 DOCK LOCK + GOLD GLOW"
-local BG = Color3.fromRGB(8, 8, 9)
-local PANEL = Color3.fromRGB(16, 16, 17)
-local CARD = Color3.fromRGB(24, 23, 20)
-local GOLD = Color3.fromRGB(212, 175, 55)
+local VERSION = "V10.0  |  NOIR REFINED"
+local BG = Color3.fromRGB(7, 8, 10)
+local PANEL = Color3.fromRGB(13, 15, 18)
+local CARD = Color3.fromRGB(21, 22, 25)
+local GOLD = Color3.fromRGB(232, 190, 86)
 local WHITE = Color3.fromRGB(245, 242, 232)
 local MUTED = Color3.fromRGB(145, 143, 135)
 local ACCENT = GOLD
@@ -112,7 +112,7 @@ local main = new("Frame", {
     ZIndex = 2,
     Visible = true
 }, gui)
-corner(main, 12)
+corner(main, 18)
 -- Declare scale before hide/show callbacks so they capture this local instance.
 local scale=new("UIScale",{Scale=1},main)
 local mainGlow = new("UIStroke", {Color=GOLD, Transparency=0.68, Thickness=5}, main)
@@ -121,20 +121,20 @@ local mainGlowTween=TweenService:Create(mainGlow,TweenInfo.new(1.5,Enum.EasingSt
 mainGlowTween:Play()
 
 local top = new("Frame", {
-    Size=UDim2.new(1,0,0,46), BackgroundColor3=PANEL,
+    Size=UDim2.new(1,0,0,52), BackgroundColor3=PANEL,
     BorderSizePixel=0, Active=true, ZIndex=3
 }, main)
-corner(top, 10)
+corner(top, 16)
 
 local logo = new("TextLabel", {
-    Position=UDim2.fromOffset(16,0), Size=UDim2.fromOffset(155,46),
-    BackgroundTransparency=1, Text="◈  SYLLINSE", TextColor3=ACCENT,
-    Font=Enum.Font.GothamBlack, TextSize=16,
+    Position=UDim2.fromOffset(19,0), Size=UDim2.fromOffset(155,52),
+    BackgroundTransparency=1, Text="✦  SYLLINSE", TextColor3=ACCENT,
+    Font=Enum.Font.GothamBlack, TextSize=17,
     TextXAlignment=Enum.TextXAlignment.Left, ZIndex=4
 }, top)
 
 new("TextLabel", {
-    Position=UDim2.fromOffset(170,0), Size=UDim2.fromOffset(160,46),
+    Position=UDim2.fromOffset(184,0), Size=UDim2.fromOffset(190,52),
     BackgroundTransparency=1, Text=VERSION, TextColor3=MUTED,
     Font=Enum.Font.GothamMedium, TextSize=9,
     TextXAlignment=Enum.TextXAlignment.Left, ZIndex=4
@@ -149,25 +149,25 @@ local close = new("TextButton", {
 corner(close, 7)
 
 local sidebar = new("Frame", {
-    Position=UDim2.fromOffset(0,46), Size=UDim2.new(0,132,1,-46),
+    Position=UDim2.fromOffset(0,52), Size=UDim2.new(0,140,1,-52),
     BackgroundColor3=PANEL, BorderSizePixel=0, ZIndex=3
 }, main)
 
 new("TextLabel", {
-    Position=UDim2.fromOffset(14,13), Size=UDim2.new(1,-20,0,18),
+    Position=UDim2.fromOffset(16,17), Size=UDim2.new(1,-24,0,18),
     BackgroundTransparency=1, Text="NAVIGATION", TextColor3=MUTED,
     Font=Enum.Font.GothamBold, TextSize=9,
     TextXAlignment=Enum.TextXAlignment.Left, ZIndex=4
 }, sidebar)
 
 local nav = new("Frame", {
-    Position=UDim2.fromOffset(8,40), Size=UDim2.new(1,-16,0,220),
+    Position=UDim2.fromOffset(9,46), Size=UDim2.new(1,-18,0,220),
     BackgroundTransparency=1, ZIndex=4
 }, sidebar)
 new("UIListLayout", {Padding=UDim.new(0,6), SortOrder=Enum.SortOrder.LayoutOrder}, nav)
 
 local content = new("Frame", {
-    Position=UDim2.fromOffset(143,57), Size=UDim2.new(1,-154,1,-67),
+    Position=UDim2.fromOffset(151,64), Size=UDim2.new(1,-163,1,-74),
     BackgroundTransparency=1, ClipsDescendants=true, ZIndex=3
 }, main)
 
@@ -191,8 +191,8 @@ local function createPage(name)
         Visible=false, ZIndex=4
     }, content)
     new("UIGridLayout", {
-        CellSize=UDim2.new(0.5,-6,0,75),
-        CellPadding=UDim2.fromOffset(9,9),
+        CellSize=UDim2.new(0.5,-6,0,82),
+        CellPadding=UDim2.fromOffset(10,10),
         SortOrder=Enum.SortOrder.LayoutOrder
     }, page)
     pages[name] = page
@@ -208,7 +208,7 @@ for _, info in ipairs(tabInfo) do
         TextXAlignment=Enum.TextXAlignment.Left,
         AutoButtonColor=false, ZIndex=5
     }, nav)
-    corner(button, 7)
+    corner(button, 10)
     local indicator = new("Frame", {
         Size=UDim2.new(0,3,0,0), Position=UDim2.fromOffset(0,17),
         BackgroundColor3=ACCENT, BorderSizePixel=0, ZIndex=6
@@ -223,8 +223,9 @@ local function createCard(parent, title, description)
         Name=title, BackgroundColor3=CARD,
         BorderSizePixel=0, ZIndex=5
     }, parent)
-    corner(card, 8)
-    new("UIStroke", {Color=ACCENT, Transparency=0.78, Thickness=1}, card)
+    corner(card, 12)
+    new("UIStroke", {Color=ACCENT, Transparency=0.72, Thickness=1}, card)
+    new("UIGradient",{Rotation=90,Color=ColorSequence.new(Color3.fromRGB(27,28,31),Color3.fromRGB(17,18,20))},card)
     new("TextLabel", {
         Position=UDim2.fromOffset(10,8), Size=UDim2.new(1,-18,0,18),
         BackgroundTransparency=1, Text=title, TextColor3=WHITE,
@@ -357,7 +358,7 @@ addButton(pages.Settings,"Refresh","Refresh dashboard values",function()
     local label=gameCard:FindFirstChildWhichIsA("TextLabel")
     if label then label.Text=game.Name end
 end)
-addButton(pages.About,"SYLLINSE V8.1","Gold Motion Edition",function() print(VERSION) end)
+addButton(pages.About,"SYLLINSE V10.0","Noir Refined Edition",function() print(VERSION) end)
 addButton(pages.About,"Developer","SYLLINSE project",function() print("SYLLINSE") end)
 
 -- Live stats
@@ -820,10 +821,10 @@ menuButton.Activated:Connect(function()
     sidebarExpanded=not sidebarExpanded
     if sidebarExpanded then
         sidebar.Visible=true
-        tween(content,.28,{Position=UDim2.fromOffset(143,57),Size=UDim2.new(1,-154,1,-67)},Enum.EasingStyle.Quart)
+        tween(content,.28,{Position=UDim2.fromOffset(151,64),Size=UDim2.new(1,-163,1,-74)},Enum.EasingStyle.Quart)
         tween(menuGlow,.25,{Transparency=.08,Thickness=2.5})
     else
-        tween(content,.28,{Position=UDim2.fromOffset(16,57),Size=UDim2.new(1,-32,1,-67)},Enum.EasingStyle.Quart)
+        tween(content,.28,{Position=UDim2.fromOffset(16,64),Size=UDim2.new(1,-32,1,-74)},Enum.EasingStyle.Quart)
         tween(menuGlow,.25,{Transparency=.42,Thickness=1.5})
         task.delay(.29,function()
             if not sidebarExpanded then sidebar.Visible=false end
