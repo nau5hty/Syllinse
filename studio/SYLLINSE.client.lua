@@ -190,7 +190,7 @@ make("TextLabel", {
 
 local nav = make("Frame", {
     Position = UDim2.fromOffset(10, 45),
-    Size = UDim2.new(1, -20, 0, 150),
+    Size = UDim2.new(1, -20, 0, 190),
     BackgroundTransparency = 1,
     ZIndex = 4,
 }, sidebar)
@@ -286,7 +286,8 @@ end
 
 addNav("Home", "⌂", 1)
 addNav("Appearance", "◈", 2)
-addNav("About", "ⓘ", 3)
+addNav("Controls", "⚙", 3)
+addNav("About", "ⓘ", 4)
 
 -- Home page
 local home = makePage("Home", "Welcome to SYLLINSE", "A clean, responsive interface playground.")
@@ -299,6 +300,61 @@ local quick = card(home, 208, 94)
 addText(quick, "QUICK STATUS", UDim2.fromOffset(18, 13), UDim2.new(1, -36, 0, 17), 9, COLORS.muted, Enum.Font.GothamBold)
 addText(quick, "Interface", UDim2.fromOffset(18, 39), UDim2.fromOffset(110, 20), 12, COLORS.text, Enum.Font.GothamSemibold)
 local online = addText(quick, "●  Running", UDim2.new(1, -128, 0, 39), UDim2.fromOffset(108, 20), 11, accent, Enum.Font.GothamSemibold)
+
+-- Controls page: harmless, local UI demonstration controls.
+local controls = makePage("Controls", "Controls", "Example toggles and sliders for your own game's UI.")
+local leftControl = make("Frame", {Position = UDim2.fromOffset(0, 82), Size = UDim2.new(0.5, -7, 0, 290), BackgroundTransparency = 1, ZIndex = 3}, controls)
+local rightControl = make("Frame", {Position = UDim2.new(0.5, 7, 0, 82), Size = UDim2.new(0.5, -7, 0, 290), BackgroundTransparency = 1, ZIndex = 3}, controls)
+local function controlCard(parent, y, h, title)
+    local c = card(parent, y, h)
+    addText(c, title, UDim2.fromOffset(15, 12), UDim2.new(1, -30, 0, 18), 10, COLORS.muted, Enum.Font.GothamBold)
+    return c
+end
+local toggleCard = controlCard(leftControl, 0, 118, "DEMO TOGGLES")
+local function addDemoToggle(parent, y, labelText, defaultValue)
+    local value = defaultValue
+    addText(parent, labelText, UDim2.fromOffset(15, y), UDim2.new(1, -85, 0, 24), 11, COLORS.text, Enum.Font.GothamSemibold)
+    local switch = make("TextButton", {Position = UDim2.new(1, -62, 0, y - 1), Size = UDim2.fromOffset(46, 24), BackgroundColor3 = value and accent or COLORS.line, Text = "", AutoButtonColor = false, ZIndex = 6}, parent)
+    round(switch, 20)
+    local knob = make("Frame", {Position = value and UDim2.new(1, -21, 0, 3) or UDim2.fromOffset(3, 3), Size = UDim2.fromOffset(18, 18), BackgroundColor3 = Color3.new(1,1,1), BorderSizePixel = 0, ZIndex = 7}, switch)
+    round(knob, 12)
+    switch.Activated:Connect(function()
+        value = not value
+        tween(switch, 0.16, {BackgroundColor3 = value and accent or COLORS.line})
+        tween(knob, 0.16, {Position = value and UDim2.new(1, -21, 0, 3) or UDim2.fromOffset(3, 3)})
+    end)
+end
+addDemoToggle(toggleCard, 43, "Example option", true)
+addDemoToggle(toggleCard, 79, "Second option", false)
+local sliderCard = controlCard(leftControl, 132, 112, "DEMO SLIDER")
+local sliderValue = 60
+local valueLabel = addText(sliderCard, "Value: 60", UDim2.fromOffset(15, 39), UDim2.new(1, -30, 0, 20), 11, COLORS.text, Enum.Font.GothamSemibold)
+local track = make("TextButton", {Position = UDim2.fromOffset(15, 72), Size = UDim2.new(1, -30, 0, 8), BackgroundColor3 = COLORS.line, Text = "", AutoButtonColor = false, ZIndex = 6}, sliderCard)
+round(track, 8)
+local fill = make("Frame", {Size = UDim2.new(0.6, 0, 1, 0), BackgroundColor3 = accent, BorderSizePixel = 0, ZIndex = 7}, track)
+round(fill, 8)
+local function setSliderFromX(x)
+    local alpha = math.clamp((x - track.AbsolutePosition.X) / math.max(track.AbsoluteSize.X, 1), 0, 1)
+    sliderValue = math.floor(alpha * 100 + 0.5)
+    valueLabel.Text = "Value: " .. sliderValue
+    fill.Size = UDim2.new(alpha, 0, 1, 0)
+end
+track.Activated:Connect(function() setSliderFromX(UserInputService:GetMouseLocation().X) end)
+local notificationCard = controlCard(rightControl, 0, 118, "NOTIFICATIONS")
+addText(notificationCard, "Try a sample toast message.", UDim2.fromOffset(15, 42), UDim2.new(1, -30, 0, 28), 10, COLORS.muted)
+local toastButton = make("TextButton", {Position = UDim2.fromOffset(15, 77), Size = UDim2.new(1, -30, 0, 28), BackgroundColor3 = accentDark, Text = "Show notification", TextColor3 = COLORS.text, Font = Enum.Font.GothamBold, TextSize = 10, AutoButtonColor = false, ZIndex = 6}, notificationCard)
+round(toastButton, 8)
+local toast = make("Frame", {AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 18), Size = UDim2.fromOffset(230, 58), BackgroundColor3 = COLORS.panel, BackgroundTransparency = 0.05, Visible = false, ZIndex = 30}, gui)
+round(toast, 11)
+outline(toast, accent, 0.15, 1.2)
+addText(toast, "✓  SYLLINSE", UDim2.fromOffset(13, 7), UDim2.new(1, -26, 0, 18), 10, accent, Enum.Font.GothamBold)
+addText(toast, "Sample notification displayed.", UDim2.fromOffset(13, 29), UDim2.new(1, -26, 0, 18), 9, COLORS.muted)
+toastButton.Activated:Connect(function()
+    toast.Visible = true
+    toast.Position = UDim2.new(1, 0, 0, 18)
+    tween(toast, 0.25, {Position = UDim2.new(1, -18, 0, 18)})
+    task.delay(2.2, function() if toast and toast.Parent then tween(toast, 0.2, {Position = UDim2.new(1, 0, 0, 18)}); task.delay(0.22, function() if toast and toast.Parent then toast.Visible = false end end) end end)
+end)
 
 -- Appearance page
 local appearance = makePage("Appearance", "Appearance", "Adjust the look of this interface.")
