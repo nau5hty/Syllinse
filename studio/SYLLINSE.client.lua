@@ -1,464 +1,431 @@
--- SYLLINSE V1
--- VibeUI-inspired Roblox Studio interface
--- Place this LocalScript in StarterPlayerScripts
+-- SYLLINSE | VibeUI-inspired Studio interface
+-- Studio-safe visual prototype. Place this LocalScript in StarterPlayerScripts.
+-- This recreates a modern dark/cyan UI aesthetic; it does not load executor code.
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
-local old = playerGui:FindFirstChild("SYLLINSE")
-if old then old:Destroy() end
+local previous = playerGui:FindFirstChild("SYLLINSE")
+if previous then previous:Destroy() end
 
-local GOLD = Color3.fromRGB(225, 174, 75)
-local DARK = Color3.fromRGB(13, 13, 17)
-local PANEL = Color3.fromRGB(22, 22, 28)
-local TEXT = Color3.fromRGB(240, 237, 230)
-local MUTED = Color3.fromRGB(145, 143, 150)
+local COLORS = {
+    bg = Color3.fromRGB(12, 15, 20),
+    panel = Color3.fromRGB(19, 23, 30),
+    card = Color3.fromRGB(25, 31, 40),
+    cardHover = Color3.fromRGB(32, 40, 51),
+    text = Color3.fromRGB(235, 241, 248),
+    muted = Color3.fromRGB(139, 153, 169),
+    accent = Color3.fromRGB(91, 214, 207),
+    accentDark = Color3.fromRGB(35, 115, 117),
+    line = Color3.fromRGB(49, 62, 75),
+}
+local accent = COLORS.accent
 
-local function corner(obj, radius)
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, radius)
-    c.Parent = obj
-end
-
-local function stroke(obj, color, transparency, thickness)
-    local s = Instance.new("UIStroke")
-    s.Color = color
-    s.Transparency = transparency or 0
-    s.Thickness = thickness or 1
-    s.Parent = obj
-    return s
-end
-
-local function tween(obj, duration, properties)
-    local t = TweenService:Create(
-        obj,
-        TweenInfo.new(duration, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-        properties
-    )
-    t:Play()
-    return t
-end
-
-local function make(class, props, parent)
-    local obj = Instance.new(class)
-    for k, v in pairs(props) do
-        obj[k] = v
-    end
+local function make(className, props, parent)
+    local obj = Instance.new(className)
+    for k, v in pairs(props or {}) do obj[k] = v end
     obj.Parent = parent
     return obj
 end
 
--- Floating toggle
-local toggle = make("TextButton", {
-    Name = "Toggle",
-    Size = UDim2.fromOffset(58, 58),
-    Position = UDim2.new(0, 24, 0.5, -29),
-    BackgroundColor3 = DARK,
-    Text = "S",
-    TextColor3 = GOLD,
-    TextSize = 27,
-    Font = Enum.Font.GothamBold,
-    AutoButtonColor = false,
-    ZIndex = 10
+local function round(obj, radius)
+    make("UICorner", {CornerRadius = UDim.new(0, radius or 10)}, obj)
+end
+
+local function outline(obj, color, transparency, thickness)
+    return make("UIStroke", {
+        Color = color or COLORS.line,
+        Transparency = transparency or 0,
+        Thickness = thickness or 1,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+    }, obj)
+end
+
+local function tween(obj, duration, props, style)
+    local t = TweenService:Create(obj, TweenInfo.new(
+        duration, style or Enum.EasingStyle.Quint, Enum.EasingDirection.Out
+    ), props)
+    t:Play()
+    return t
+end
+
+local gui = make("ScreenGui", {
+    Name = "SYLLINSE",
+    ResetOnSpawn = false,
+    IgnoreGuiInset = true,
+    DisplayOrder = 80,
+    ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+}, playerGui)
+
+local scale = make("UIScale", {Scale = 1}, gui)
+local function fitScale()
+    local camera = workspace.CurrentCamera
+    if not camera then return end
+    local viewport = camera.ViewportSize
+    scale.Scale = math.clamp(math.min(viewport.X / 900, viewport.Y / 650), 0.68, 1)
+end
+fitScale()
+if workspace.CurrentCamera then
+    workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fitScale)
+end
+
+-- Soft dim layer. It is non-interactive so touch controls remain usable.
+local dim = make("Frame", {
+    Name = "Dim",
+    Size = UDim2.fromScale(1, 1),
+    BackgroundColor3 = Color3.new(0, 0, 0),
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    Active = false,
+    ZIndex = 1,
 }, gui)
 
-corner(toggle, 100)
-stroke(toggle, GOLD, 0.08, 2)
-
--- Navigation dock
-local dock = make("Frame", {
-    Name = "NavigationDock",
-    Size = UDim2.fromOffset(58, 0),
-    Position = UDim2.new(0, 24, 0.5, -29),
-    BackgroundColor3 = PANEL,
-    ClipsDescendants = true,
-    ZIndex = 5
-}, gui)
-
-corner(dock, 22)
-stroke(dock, GOLD, 0.35, 1)
-
-local dockLayout = Instance.new("UIListLayout")
-dockLayout.Padding = UDim.new(0, 8)
-dockLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-dockLayout.Parent = dock
-
-make("UIPadding", {
-    PaddingTop = UDim.new(0, 12),
-    PaddingBottom = UDim.new(0, 12)
-}, dock)
-
--- Main window
-local main = make("Frame", {
-    Name = "MainWindow",
-    Size = UDim2.fromOffset(530, 340),
-    Position = UDim2.new(0.5, -265, 0.5, -170),
-    BackgroundColor3 = DARK,
+local window = make("Frame", {
+    Name = "Window",
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    Position = UDim2.fromScale(0.5, 0.5),
+    Size = UDim2.fromOffset(720, 470),
+    BackgroundColor3 = COLORS.bg,
+    BorderSizePixel = 0,
     Visible = false,
-    BackgroundTransparency = 1,
-    ZIndex = 2
+    ZIndex = 2,
 }, gui)
+round(window, 17)
+outline(window, COLORS.line, 0.1, 1.2)
+make("UIGradient", {
+    Rotation = 90,
+    Color = ColorSequence.new(Color3.fromRGB(20, 27, 35), COLORS.bg),
+}, window)
 
-corner(main, 18)
-stroke(main, GOLD, 0.2, 1.4)
+local windowScale = make("UIScale", {Scale = 0.94}, window)
 
-local scale = Instance.new("UIScale")
-scale.Scale = 0.94
-scale.Parent = main
-
--- Header
 local header = make("Frame", {
-    Size = UDim2.new(1, 0, 0, 65),
-    BackgroundColor3 = PANEL,
-    BorderSizePixel = 0
-}, main)
+    Size = UDim2.new(1, 0, 0, 64),
+    BackgroundColor3 = COLORS.panel,
+    BorderSizePixel = 0,
+    ZIndex = 3,
+}, window)
+round(header, 17)
+make("Frame", {
+    Position = UDim2.new(0, 0, 1, -1),
+    Size = UDim2.new(1, 0, 0, 1),
+    BackgroundColor3 = COLORS.line,
+    BorderSizePixel = 0,
+    ZIndex = 4,
+}, header)
 
-corner(header, 18)
-
-make("TextLabel", {
-    Position = UDim2.fromOffset(22, 9),
-    Size = UDim2.fromOffset(220, 28),
+local brand = make("TextLabel", {
+    Position = UDim2.fromOffset(22, 10),
+    Size = UDim2.fromOffset(210, 26),
     BackgroundTransparency = 1,
-    Text = "SYLLINSE",
-    TextColor3 = GOLD,
-    TextSize = 21,
+    Text = "✦  SYLLINSE",
+    TextColor3 = accent,
     Font = Enum.Font.GothamBold,
-    TextXAlignment = Enum.TextXAlignment.Left
+    TextSize = 19,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 4,
+}, header)
+make("TextLabel", {
+    Position = UDim2.fromOffset(24, 36),
+    Size = UDim2.fromOffset(270, 16),
+    BackgroundTransparency = 1,
+    Text = "VIBE-INSPIRED INTERFACE  •  STUDIO EDITION",
+    TextColor3 = COLORS.muted,
+    Font = Enum.Font.GothamMedium,
+    TextSize = 8,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 4,
 }, header)
 
-make("TextLabel", {
-    Position = UDim2.fromOffset(23, 36),
-    Size = UDim2.fromOffset(250, 17),
-    BackgroundTransparency = 1,
-    Text = "PREMIUM INTERFACE  •  V1",
-    TextColor3 = MUTED,
+local status = make("TextLabel", {
+    AnchorPoint = Vector2.new(1, 0.5),
+    Position = UDim2.new(1, -64, 0.5, 0),
+    Size = UDim2.fromOffset(88, 25),
+    BackgroundColor3 = Color3.fromRGB(22, 49, 47),
+    Text = "●  READY",
+    TextColor3 = accent,
+    Font = Enum.Font.GothamBold,
     TextSize = 9,
-    Font = Enum.Font.GothamMedium,
-    TextXAlignment = Enum.TextXAlignment.Left
+    ZIndex = 4,
 }, header)
+round(status, 20)
 
 local close = make("TextButton", {
-    Size = UDim2.fromOffset(34, 34),
-    Position = UDim2.new(1, -48, 0, 15),
-    BackgroundColor3 = Color3.fromRGB(42, 35, 32),
+    AnchorPoint = Vector2.new(1, 0.5),
+    Position = UDim2.new(1, -17, 0.5, 0),
+    Size = UDim2.fromOffset(30, 30),
+    BackgroundColor3 = COLORS.card,
     Text = "×",
-    TextColor3 = GOLD,
-    TextSize = 23,
+    TextColor3 = COLORS.text,
     Font = Enum.Font.GothamBold,
-    AutoButtonColor = false
+    TextSize = 20,
+    AutoButtonColor = false,
+    ZIndex = 5,
 }, header)
+round(close, 9)
 
-corner(close, 10)
-
--- Sidebar
+-- Sidebar and page area
 local sidebar = make("Frame", {
-    Position = UDim2.fromOffset(12, 78),
-    Size = UDim2.new(0, 135, 1, -90),
-    BackgroundColor3 = PANEL
-}, main)
-
-corner(sidebar, 13)
-
-local sideLayout = Instance.new("UIListLayout")
-sideLayout.Padding = UDim.new(0, 8)
-sideLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-sideLayout.Parent = sidebar
-
-make("UIPadding", {
-    PaddingTop = UDim.new(0, 12)
+    Position = UDim2.fromOffset(0, 64),
+    Size = UDim2.new(0, 166, 1, -64),
+    BackgroundColor3 = COLORS.panel,
+    BorderSizePixel = 0,
+    ZIndex = 3,
+}, window)
+make("TextLabel", {
+    Position = UDim2.fromOffset(19, 17),
+    Size = UDim2.new(1, -30, 0, 18),
+    BackgroundTransparency = 1,
+    Text = "WORKSPACE",
+    TextColor3 = COLORS.muted,
+    Font = Enum.Font.GothamBold,
+    TextSize = 9,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 4,
 }, sidebar)
 
--- Content area
-local content = make("Frame", {
-    Position = UDim2.fromOffset(158, 78),
-    Size = UDim2.new(1, -170, 1, -90),
-    BackgroundColor3 = PANEL
-}, main)
+local nav = make("Frame", {
+    Position = UDim2.fromOffset(10, 45),
+    Size = UDim2.new(1, -20, 0, 150),
+    BackgroundTransparency = 1,
+    ZIndex = 4,
+}, sidebar)
+make("UIListLayout", {
+    Padding = UDim.new(0, 7),
+    SortOrder = Enum.SortOrder.LayoutOrder,
+}, nav)
 
-corner(content, 13)
+local pageArea = make("Frame", {
+    Position = UDim2.fromOffset(184, 82),
+    Size = UDim2.new(1, -202, 1, -100),
+    BackgroundTransparency = 1,
+    ZIndex = 3,
+}, window)
 
-local pages = {}
+local pages, navButtons = {}, {}
+local selectedPage = "Home"
 
-local function createPage(name, title, description)
+local function addText(parent, text, pos, size, fontSize, color, font)
+    return make("TextLabel", {
+        Position = pos,
+        Size = size,
+        BackgroundTransparency = 1,
+        Text = text,
+        TextColor3 = color or COLORS.text,
+        Font = font or Enum.Font.Gotham,
+        TextSize = fontSize or 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+        TextWrapped = true,
+        ZIndex = 5,
+    }, parent)
+end
+
+local function card(parent, y, height)
+    local c = make("Frame", {
+        Position = UDim2.fromOffset(0, y),
+        Size = UDim2.new(1, 0, 0, height),
+        BackgroundColor3 = COLORS.card,
+        BorderSizePixel = 0,
+        ZIndex = 4,
+    }, parent)
+    round(c, 12)
+    outline(c, COLORS.line, 0.45, 1)
+    return c
+end
+
+local function makePage(name, title, subtitle)
     local page = make("Frame", {
         Name = name,
         Size = UDim2.fromScale(1, 1),
         BackgroundTransparency = 1,
-        Visible = false
-    }, content)
-
-    make("TextLabel", {
-        Position = UDim2.fromOffset(20, 20),
-        Size = UDim2.new(1, -35, 0, 32),
-        BackgroundTransparency = 1,
-        Text = title,
-        TextColor3 = TEXT,
-        TextSize = 20,
-        Font = Enum.Font.GothamBold,
-        TextXAlignment = Enum.TextXAlignment.Left
-    }, page)
-
-    make("TextLabel", {
-        Position = UDim2.fromOffset(20, 57),
-        Size = UDim2.new(1, -35, 0, 38),
-        BackgroundTransparency = 1,
-        Text = description,
-        TextColor3 = MUTED,
-        TextSize = 11,
-        Font = Enum.Font.Gotham,
-        TextWrapped = true,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextYAlignment = Enum.TextYAlignment.Top
-    }, page)
-
+        Visible = false,
+        ZIndex = 3,
+    }, pageArea)
+    addText(page, title, UDim2.fromOffset(2, 0), UDim2.new(1, -4, 0, 34), 22, COLORS.text, Enum.Font.GothamBold)
+    addText(page, subtitle, UDim2.fromOffset(3, 34), UDim2.new(1, -6, 0, 30), 11, COLORS.muted)
     pages[name] = page
     return page
 end
 
-local home = createPage(
-    "Home",
-    "Welcome back.",
-    "SYLLINSE is ready. Your interface is running smoothly."
-)
-
-local settings = createPage(
-    "Settings",
-    "Appearance",
-    "Customize the interface experience."
-)
-
-local about = createPage(
-    "About",
-    "About SYLLINSE",
-    "A premium interface project inspired by modern Roblox UI design."
-)
-
-local function createAction(parent, label, position, callback)
-    local button = make("TextButton", {
-        Position = position,
-        Size = UDim2.new(1, -40, 0, 42),
-        BackgroundColor3 = Color3.fromRGB(35, 33, 38),
-        Text = label,
-        TextColor3 = TEXT,
-        TextSize = 12,
-        Font = Enum.Font.GothamMedium,
-        AutoButtonColor = false
-    }, parent)
-
-    corner(button, 10)
-    stroke(button, GOLD, 0.75, 1)
-
-    button.MouseEnter:Connect(function()
-        tween(button, 0.15, {
-            BackgroundColor3 = Color3.fromRGB(53, 44, 34)
+local function selectPage(name)
+    selectedPage = name
+    for pageName, page in pairs(pages) do page.Visible = pageName == name end
+    for buttonName, button in pairs(navButtons) do
+        local active = buttonName == name
+        tween(button, 0.16, {
+            BackgroundColor3 = active and Color3.fromRGB(27, 55, 57) or COLORS.panel,
+            TextColor3 = active and accent or COLORS.muted,
         })
-    end)
-
-    button.MouseLeave:Connect(function()
-        tween(button, 0.15, {
-            BackgroundColor3 = Color3.fromRGB(35, 33, 38)
-        })
-    end)
-
-    button.Activated:Connect(callback)
-    return button
-end
-
-local function notify(message)
-    local notification = make("TextLabel", {
-        Size = UDim2.fromOffset(250, 45),
-        Position = UDim2.new(0.5, -125, 0, -60),
-        BackgroundColor3 = PANEL,
-        Text = message,
-        TextColor3 = GOLD,
-        TextSize = 12,
-        Font = Enum.Font.GothamMedium,
-        ZIndex = 20
-    }, gui)
-
-    corner(notification, 12)
-    stroke(notification, GOLD, 0.3, 1)
-
-    tween(notification, 0.35, {
-        Position = UDim2.new(0.5, -125, 0, 25)
-    })
-
-    task.delay(2, function()
-        if notification.Parent then
-            tween(notification, 0.3, {
-                Position = UDim2.new(0.5, -125, 0, -60),
-                BackgroundTransparency = 1,
-                TextTransparency = 1
-            })
-            task.wait(0.35)
-            notification:Destroy()
-        end
-    end)
-end
-
-createAction(home, "Interface loaded", UDim2.fromOffset(20, 115), function()
-    notify("SYLLINSE is running!")
-end)
-
-createAction(settings, "Toggle gold theme", UDim2.fromOffset(20, 115), function()
-    notify("Gold theme selected")
-end)
-
-createAction(about, "Version 1.0.0", UDim2.fromOffset(20, 115), function()
-    notify("Thanks for using SYLLINSE")
-end)
-
-local function showPage(name)
-    for pageName, page in pairs(pages) do
-        page.Visible = pageName == name
     end
 end
 
-showPage("Home")
-
-local tabNames = {"Home", "Settings", "About"}
-
-for _, name in ipairs(tabNames) do
-    local tab = make("TextButton", {
-        Size = UDim2.new(1, -16, 0, 39),
-        BackgroundColor3 = DARK,
-        Text = name,
-        TextColor3 = TEXT,
+local function addNav(name, glyph, order)
+    local b = make("TextButton", {
+        Name = name .. "Nav",
+        Size = UDim2.new(1, 0, 0, 38),
+        BackgroundColor3 = COLORS.panel,
+        Text = glyph .. "   " .. name,
+        TextColor3 = COLORS.muted,
+        Font = Enum.Font.GothamSemibold,
         TextSize = 11,
-        Font = Enum.Font.GothamMedium,
-        AutoButtonColor = false
-    }, sidebar)
-
-    corner(tab, 9)
-
-    tab.Activated:Connect(function()
-        showPage(name)
-    end)
+        TextXAlignment = Enum.TextXAlignment.Left,
+        AutoButtonColor = false,
+        LayoutOrder = order,
+        ZIndex = 5,
+    }, nav)
+    round(b, 9)
+    make("UIPadding", {PaddingLeft = UDim.new(0, 12)}, b)
+    b.Activated:Connect(function() selectPage(name) end)
+    navButtons[name] = b
 end
 
--- Dock buttons
-local dockOpen = false
+addNav("Home", "⌂", 1)
+addNav("Appearance", "◈", 2)
+addNav("About", "ⓘ", 3)
 
-for _, name in ipairs(tabNames) do
-    local button = make("TextButton", {
-        Size = UDim2.fromOffset(38, 38),
-        BackgroundColor3 = DARK,
-        Text = string.sub(name, 1, 1),
-        TextColor3 = GOLD,
-        TextSize = 14,
-        Font = Enum.Font.GothamBold,
+-- Home page
+local home = makePage("Home", "Welcome to SYLLINSE", "A clean, responsive interface playground.")
+local welcome = card(home, 82, 112)
+addText(welcome, "YOUR WORKSPACE", UDim2.fromOffset(18, 15), UDim2.new(1, -36, 0, 18), 9, accent, Enum.Font.GothamBold)
+addText(welcome, "Everything is ready.", UDim2.fromOffset(18, 39), UDim2.new(1, -36, 0, 27), 18, COLORS.text, Enum.Font.GothamBold)
+addText(welcome, "This is a Studio-safe UI preview. Add your own game features through normal Roblox scripts.", UDim2.fromOffset(18, 70), UDim2.new(1, -36, 0, 30), 10, COLORS.muted)
+
+local quick = card(home, 208, 94)
+addText(quick, "QUICK STATUS", UDim2.fromOffset(18, 13), UDim2.new(1, -36, 0, 17), 9, COLORS.muted, Enum.Font.GothamBold)
+addText(quick, "Interface", UDim2.fromOffset(18, 39), UDim2.fromOffset(110, 20), 12, COLORS.text, Enum.Font.GothamSemibold)
+local online = addText(quick, "●  Running", UDim2.new(1, -128, 0, 39), UDim2.fromOffset(108, 20), 11, accent, Enum.Font.GothamSemibold)
+
+-- Appearance page
+local appearance = makePage("Appearance", "Appearance", "Adjust the look of this interface.")
+local themeCard = card(appearance, 82, 128)
+addText(themeCard, "ACCENT COLOR", UDim2.fromOffset(18, 14), UDim2.new(1, -36, 0, 18), 9, COLORS.muted, Enum.Font.GothamBold)
+local themeOptions = {
+    {name = "Aqua", color = Color3.fromRGB(91, 214, 207)},
+    {name = "Violet", color = Color3.fromRGB(166, 133, 255)},
+    {name = "Gold", color = Color3.fromRGB(235, 190, 105)},
+    {name = "Rose", color = Color3.fromRGB(238, 132, 166)},
+}
+for i, option in ipairs(themeOptions) do
+    local x = 18 + (i - 1) * 105
+    local b = make("TextButton", {
+        Position = UDim2.fromOffset(x, 48),
+        Size = UDim2.fromOffset(92, 48),
+        BackgroundColor3 = COLORS.bg,
+        Text = "●  " .. option.name,
+        TextColor3 = option.color,
+        Font = Enum.Font.GothamSemibold,
+        TextSize = 10,
         AutoButtonColor = false,
-        ZIndex = 6
-    }, dock)
-
-    corner(button, 12)
-
-    button.Activated:Connect(function()
-        showPage(name)
-        if not main.Visible then
-            main.Visible = true
-            main.BackgroundTransparency = 1
-            scale.Scale = 0.94
-            tween(main, 0.3, {BackgroundTransparency = 0})
-            tween(scale, 0.3, {Scale = 1})
+        ZIndex = 5,
+    }, themeCard)
+    round(b, 9)
+    outline(b, option.color, 0.35, 1)
+    b.Activated:Connect(function()
+        accent = option.color
+        brand.TextColor3 = accent
+        status.TextColor3 = accent
+        status.BackgroundColor3 = Color3.new(option.color.R * 0.22, option.color.G * 0.22, option.color.B * 0.22)
+        online.TextColor3 = accent
+        for _, navButton in pairs(navButtons) do
+            if navButton.Text:find(selectedPage, 1, true) then navButton.TextColor3 = accent end
+        end
+        for _, child in ipairs(themeCard:GetChildren()) do
+            if child:IsA("TextButton") then
+                local strokeObj = child:FindFirstChildOfClass("UIStroke")
+                if strokeObj then strokeObj.Transparency = child == b and 0 or 0.65 end
+            end
         end
     end)
 end
 
-local function setDock(open)
-    dockOpen = open
-    local height = open and 178 or 0
+local info = card(appearance, 224, 74)
+addText(info, "TIP", UDim2.fromOffset(18, 10), UDim2.new(1, -36, 0, 16), 9, accent, Enum.Font.GothamBold)
+addText(info, "Theme changes are local to this UI preview.", UDim2.fromOffset(18, 31), UDim2.new(1, -36, 0, 25), 11, COLORS.muted)
 
-    tween(dock, 0.3, {
-        Size = UDim2.fromOffset(58, height),
-        Position = open
-            and UDim2.new(0, 24, 0.5, -117)
-            or UDim2.new(0, 24, 0.5, -29)
-    })
+-- About page
+local about = makePage("About", "About SYLLINSE", "A personal interface project.")
+local aboutCard = card(about, 82, 150)
+addText(aboutCard, "SYLLINSE STUDIO EDITION", UDim2.fromOffset(18, 17), UDim2.new(1, -36, 0, 20), 12, accent, Enum.Font.GothamBold)
+addText(aboutCard, "Built with native Roblox ScreenGui objects, TweenService and touch-friendly controls. This version is a visual UI prototype and does not execute remote code.", UDim2.fromOffset(18, 48), UDim2.new(1, -36, 0, 78), 11, COLORS.muted)
 
-    tween(toggle, 0.25, {
-        Rotation = open and 45 or 0
-    })
-end
+selectPage("Home")
 
-local function openWindow()
-    main.Visible = true
-    main.BackgroundTransparency = 1
-    scale.Scale = 0.94
+-- Floating launcher
+local launcher = make("TextButton", {
+    Name = "SYLLINSELauncher",
+    AnchorPoint = Vector2.new(0, 0.5),
+    Position = UDim2.new(0, 22, 0.5, 0),
+    Size = UDim2.fromOffset(54, 54),
+    BackgroundColor3 = COLORS.panel,
+    Text = "S",
+    TextColor3 = accent,
+    Font = Enum.Font.GothamBlack,
+    TextSize = 23,
+    AutoButtonColor = false,
+    ZIndex = 20,
+}, gui)
+round(launcher, 27)
+outline(launcher, accent, 0.05, 1.8)
 
-    tween(main, 0.4, {
-        BackgroundTransparency = 0
-    })
-
-    tween(scale, 0.4, {
-        Scale = 1
-    })
-end
-
-local function closeWindow()
-    local t = tween(scale, 0.25, {Scale = 0.94})
-    tween(main, 0.25, {BackgroundTransparency = 1})
-
-    t.Completed:Wait()
-    main.Visible = false
-end
-
-toggle.Activated:Connect(function()
-    setDock(not dockOpen)
-
-    if main.Visible then
-        closeWindow()
+local function setOpen(open)
+    if open then
+        window.Visible = true
+        dim.Visible = true
+        windowScale.Scale = 0.94
+        window.BackgroundTransparency = 0.08
+        tween(dim, 0.28, {BackgroundTransparency = 0.48})
+        tween(windowScale, 0.32, {Scale = 1}, Enum.EasingStyle.Back)
     else
-        openWindow()
+        tween(dim, 0.22, {BackgroundTransparency = 1})
+        tween(windowScale, 0.2, {Scale = 0.96})
+        task.delay(0.22, function()
+            if window and window.Parent then window.Visible = false end
+            if dim and dim.Parent then dim.Visible = false end
+        end)
     end
-end)
+end
 
-close.Activated:Connect(closeWindow)
+local isOpen = false
+local function toggleWindow()
+    isOpen = not isOpen
+    setOpen(isOpen)
+end
+launcher.Activated:Connect(toggleWindow)
+close.Activated:Connect(toggleWindow)
 
--- Drag the floating toggle
-local dragging = false
-local dragStart
-local startPosition
-
-toggle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-    or input.UserInputType == Enum.UserInputType.Touch then
+-- Drag window from its header; supports mouse and touch.
+local dragging, dragStart, startPos, dragInput
+header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
-        startPosition = toggle.Position
+        startPos = window.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
     end
 end)
-
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if dragging and (
-        input.UserInputType == Enum.UserInputType.MouseMovement
-        or input.UserInputType == Enum.UserInputType.Touch
-    ) then
+header.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input == dragInput or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
-        toggle.Position = UDim2.new(
-            startPosition.X.Scale,
-            startPosition.X.Offset + delta.X,
-            startPosition.Y.Scale,
-            startPosition.Y.Offset + delta.Y
-        )
-
-        dock.Position = UDim2.new(
-            toggle.Position.X.Scale,
-            toggle.Position.X.Offset,
-            toggle.Position.Y.Scale,
-            toggle.Position.Y.Offset - (dockOpen and 88 or 0)
+        window.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
         )
     end
 end)
 
-game:GetService("UserInputService").InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-    or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
-    end
-end)
-
-notify("SYLLINSE V1 loaded")
+-- Start closed; the launcher remains available.
+dim.Visible = false
+window.Visible = false
+print("[SYLLINSE] Studio interface loaded.")
