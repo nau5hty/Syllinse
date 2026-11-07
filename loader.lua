@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V8.6 | MOBILE INPUT FIX
+-- SYLLINSE V8.7 | PRECISION COLOUR PICKER
 -- UI-only dashboard build
 --========================================================
 
@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V8.6 MOBILE INPUT FIX"
+local VERSION = "V8.7 PRECISION COLOUR PICKER"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -250,57 +250,63 @@ end
 
 local function addToggle(parent, title, description, callback)
     local card = createCard(parent, title, description)
+    local enabled, dragging = false, false
+
+    -- Transparent full-card hit target: tap anywhere except the visible switch.
+    local cardHit = new("TextButton", {
+        Name="FullCardToggleHitbox", Size=UDim2.fromScale(1,1),
+        BackgroundTransparency=1, Text="", AutoButtonColor=false,
+        Active=true, Interactable=true, ZIndex=6
+    }, card)
+
     local track = new("TextButton", {
         AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-10,0.5,0),
-        Size=UDim2.fromOffset(40,22), BackgroundColor3=Color3.fromRGB(55,55,55),
-        Text="", AutoButtonColor=false, ZIndex=7
+        Size=UDim2.fromOffset(48,26), BackgroundColor3=Color3.fromRGB(55,55,55),
+        Text="", AutoButtonColor=false, Active=true, Interactable=true, ZIndex=8
     }, card)
     corner(track, 20)
     local outline = new("UIStroke", {Color=MUTED, Transparency=0.6}, track)
     local knob = new("Frame", {
-        Position=UDim2.fromOffset(3,3), Size=UDim2.fromOffset(16,16),
-        BackgroundColor3=WHITE, BorderSizePixel=0, ZIndex=8
+        Position=UDim2.fromOffset(4,4), Size=UDim2.fromOffset(18,18),
+        BackgroundColor3=WHITE, BorderSizePixel=0, ZIndex=9
     }, track)
     corner(knob, 20)
-    local enabled, dragging = false, false
 
     local function setEnabled(value)
         if enabled == value then return end
         enabled = value
-        tween(track,0.18,{BackgroundColor3=enabled and ACCENT or Color3.fromRGB(55,55,55)})
-        tween(knob,0.18,{Position=enabled and UDim2.new(1,-19,0,3) or UDim2.fromOffset(3,3)})
-        tween(outline,0.18,{Color=enabled and ACCENT or MUTED,Transparency=enabled and 0.1 or 0.6})
+        tween(track,.18,{BackgroundColor3=enabled and ACCENT or Color3.fromRGB(55,55,55)})
+        tween(knob,.18,{Position=enabled and UDim2.new(1,-22,0,4) or UDim2.fromOffset(4,4)})
+        tween(outline,.18,{Color=enabled and ACCENT or MUTED,Transparency=enabled and .1 or .6})
         if callback then
-            local ok, err = pcall(callback, enabled)
+            local ok,err=pcall(callback,enabled)
             if not ok then warn("[SYLLINSE] Toggle callback:",err) end
         end
     end
 
-    track.Activated:Connect(function()
-        if not dragging then setEnabled(not enabled) end
-    end)
+    cardHit.Activated:Connect(function() setEnabled(not enabled) end)
+    track.Activated:Connect(function() setEnabled(not enabled) end)
 
     local function beginDrag(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            setEnabled(input.Position.X >= track.AbsolutePosition.X + track.AbsoluteSize.X/2)
+        if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
+            dragging=true
+            setEnabled(input.Position.X>=track.AbsolutePosition.X+track.AbsoluteSize.X/2)
         end
     end
     knob.InputBegan:Connect(beginDrag)
     track.InputBegan:Connect(beginDrag)
     UIS.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
-            setEnabled(input.Position.X >= track.AbsolutePosition.X + track.AbsoluteSize.X/2)
+        if dragging and (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseMovement) then
+            setEnabled(input.Position.X>=track.AbsolutePosition.X+track.AbsoluteSize.X/2)
         end
     end)
     UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
+        if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
+            dragging=false
         end
     end)
     return card
 end
-
 local function addButton(parent, title, description, callback)
     local card = createCard(parent,title,description)
     local button = new("TextButton", {
@@ -383,7 +389,7 @@ local pickerShade = new("Frame", {
 },gui)
 local picker = new("Frame", {
     Name="ThemePicker", AnchorPoint=Vector2.new(.5,.5),
-    Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(300,340),
+    Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(300,360),
     BackgroundColor3=PANEL, BorderSizePixel=0, Visible=false, ZIndex=31
 },gui)
 corner(picker,14)
@@ -395,34 +401,36 @@ new("TextLabel",{
     TextXAlignment=Enum.TextXAlignment.Left,ZIndex=32
 },picker)
 
--- Circular colour wheel made from real touch-friendly buttons.
+-- Filled Mac-style colour wheel, with a live magnifier and brightness control.
 local wheel=new("Frame",{
-    AnchorPoint=Vector2.new(.5,.5),Position=UDim2.new(.5,0,0,151),
-    Size=UDim2.fromOffset(190,190),BackgroundColor3=CARD,
-    BorderSizePixel=0,ZIndex=32
+    AnchorPoint=Vector2.new(.5,.5),Position=UDim2.new(.5,0,0,145),
+    Size=UDim2.fromOffset(204,204),BackgroundColor3=CARD,
+    BorderSizePixel=0,ClipsDescendants=true,ZIndex=32
 },picker)
-new("UIAspectRatioConstraint",{AspectRatio=1,AspectType=Enum.AspectType.ScaleWithParentSize},wheel)
-corner(wheel,95)
+new("UIAspectRatioConstraint",{AspectRatio=1},wheel)
+corner(wheel,102)
 new("UIStroke",{Color=Color3.fromRGB(75,75,75),Transparency=.25,Thickness=1},wheel)
 
-local hue=.12
+local hue,saturation,brightness=.12,.88,.98
 local wheelDragging=false
 local committedAccent=ACCENT
 local wheelCenter
 local doneButton
+local magnifier
+local brightnessFill
+local brightnessKnob
 local function applyAccent(color)
     ACCENT=color
     tween(logo,.16,{TextColor3=color})
     tween(themeButton,.16,{TextColor3=color})
     tween(mainStroke,.16,{Color=color})
     tween(pickerStroke,.16,{Color=color})
-    tween(wheelCenter,.12,{BackgroundColor3=color})
-    tween(doneButton,.12,{BackgroundColor3=color})
+    if wheelCenter then tween(wheelCenter,.12,{BackgroundColor3=color}) end
+    if doneButton then tween(doneButton,.12,{BackgroundColor3=color}) end
+    if brightnessFill then brightnessFill.BackgroundColor3=color end
     local floatingButton=gui:FindFirstChild("FloatingToggle")
     if floatingButton then tween(floatingButton,.16,{BackgroundColor3=color}) end
-    for _,data in pairs(tabs) do
-        tween(data.indicator,.16,{BackgroundColor3=color})
-    end
+    for _,data in pairs(tabs) do tween(data.indicator,.16,{BackgroundColor3=color}) end
     for _,obj in ipairs(gui:GetDescendants()) do
         if obj:IsA("UIStroke") then obj.Color=color end
         if obj:IsA("TextButton") and obj.Text=="OPEN" then obj.BackgroundColor3=color end
@@ -433,71 +441,169 @@ local function applyAccent(color)
     launchValue.TextColor3=color
 end
 
-local function chooseHue(value)
-    hue=value%1
-    applyAccent(Color3.fromHSV(hue,.88,.98))
+local function currentColor()
+    return Color3.fromHSV(hue,saturation,brightness)
 end
 
-for i=0,71 do
-    local angle=(i/72)*math.pi*2-math.pi/2
-    local hueValue=i/72
-    local dot=new("TextButton",{
-        AnchorPoint=Vector2.new(.5,.5),
-        Position=UDim2.new(.5,math.cos(angle)*79,.5,math.sin(angle)*79),
-        Size=UDim2.fromOffset(20,20),
-        BackgroundColor3=Color3.fromHSV(hueValue,.88,.98),
-        BorderSizePixel=0,Text="",AutoButtonColor=false,Active=true,Interactable=true,ZIndex=45
-    },wheel)
-    corner(dot,9)
-    dot.Activated:Connect(function()
-        chooseHue(hueValue)
-    end)
-end
-
--- Mobile touch fallback: map a tap on the colour ring directly to a hue.
-UIS.InputBegan:Connect(function(input)
-    if not picker.Visible or input.UserInputType~=Enum.UserInputType.Touch then return end
-    local point=Vector2.new(input.Position.X,input.Position.Y)
-    local center=wheel.AbsolutePosition+wheel.AbsoluteSize/2
-    local delta=point-center
-    local radius=delta.Magnitude
-    if radius>=56 and radius<=96 then
-        local angle=math.atan2(delta.Y,delta.X)
-        chooseHue(((angle+math.pi/2)/(math.pi*2))%1)
+-- A dense radial dot field approximates a continuous hue/saturation disc.
+for gy=-10,10 do
+    for gx=-10,10 do
+        local radius=math.sqrt(gx*gx+gy*gy)/10
+        if radius<=1 then
+            local angle=math.atan2(gy,gx)
+            local cellHue=((angle/(math.pi*2))%1)
+            local cellSat=math.clamp(radius,0,1)
+            local dot=new("Frame",{
+                AnchorPoint=Vector2.new(.5,.5),
+                Position=UDim2.new(.5,gx*9,.5,gy*9),
+                Size=UDim2.fromOffset(10,10),
+                BackgroundColor3=Color3.fromHSV(cellHue,cellSat,1),
+                BorderSizePixel=0,ZIndex=33
+            },wheel)
+            corner(dot,5)
+        end
     end
-end)
+end
 
 wheelCenter=new("Frame",{
     AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
-    Size=UDim2.fromOffset(108,108),BackgroundColor3=ACCENT,
-    BorderSizePixel=0,ZIndex=35
+    Size=UDim2.fromOffset(54,54),BackgroundColor3=currentColor(),
+    BorderSizePixel=0,ZIndex=36
 },wheel)
-new("UIAspectRatioConstraint",{AspectRatio=1},wheelCenter)
-corner(wheelCenter,54)
-new("UIStroke",{Color=WHITE,Transparency=.75,Thickness=1},wheelCenter)
+corner(wheelCenter,27)
+new("UIStroke",{Color=WHITE,Transparency=.35,Thickness=2},wheelCenter)
 new("TextLabel",{
     AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
-    Size=UDim2.new(1,-12,0,28),BackgroundTransparency=1,
-    Text="PREVIEW",TextColor3=BG,Font=Enum.Font.GothamBlack,
-    TextSize=11,ZIndex=36
+    Size=UDim2.new(1,-6,0,18),BackgroundTransparency=1,
+    Text="●",TextColor3=BG,Font=Enum.Font.GothamBlack,
+    TextSize=13,ZIndex=37
 },wheelCenter)
 
+-- Floating loupe follows the finger and previews the exact selected shade.
+magnifier=new("Frame",{
+    Size=UDim2.fromOffset(48,48),BackgroundColor3=currentColor(),
+    BorderSizePixel=0,Visible=false,ZIndex=50
+},wheel)
+corner(magnifier,24)
+new("UIStroke",{Color=WHITE,Thickness=3,Transparency=.08},magnifier)
+local magText=new("TextLabel",{
+    Size=UDim2.fromScale(1,1),BackgroundTransparency=1,
+    Text="●",TextColor3=BG,Font=Enum.Font.GothamBlack,
+    TextSize=18,ZIndex=51
+},magnifier)
+
+local function updateColourFromPoint(point,showLoupe)
+    local center=wheel.AbsolutePosition+wheel.AbsoluteSize/2
+    local delta=point-center
+    local radius=math.min(delta.Magnitude, wheel.AbsoluteSize.X/2-5)
+    if delta.Magnitude>2 then
+        hue=(math.atan2(delta.Y,delta.X)/(math.pi*2))%1
+        saturation=math.clamp(radius/(wheel.AbsoluteSize.X/2-5),0,1)
+    else
+        saturation=0
+    end
+    local color=currentColor()
+    applyAccent(color)
+    if wheelCenter then wheelCenter.BackgroundColor3=color end
+    if magnifier then
+        magnifier.BackgroundColor3=color
+        magnifier.Visible=showLoupe
+        local localX=point.X-wheel.AbsolutePosition.X
+        local localY=point.Y-wheel.AbsolutePosition.Y-38
+        magnifier.Position=UDim2.fromOffset(
+            math.clamp(localX-24,0,wheel.AbsoluteSize.X-48),
+            math.clamp(localY-24,0,wheel.AbsoluteSize.Y-48)
+        )
+    end
+end
+
+local function chooseHue(value)
+    hue=value%1
+    saturation=.88
+    applyAccent(currentColor())
+end
+
+UIS.InputBegan:Connect(function(input)
+    if not picker.Visible then return end
+    local kind=input.UserInputType
+    if kind~=Enum.UserInputType.Touch and kind~=Enum.UserInputType.MouseButton1 then return end
+    local point=Vector2.new(input.Position.X,input.Position.Y)
+    local wp,ws=wheel.AbsolutePosition,wheel.AbsoluteSize
+    if point.X>=wp.X and point.X<=wp.X+ws.X and point.Y>=wp.Y and point.Y<=wp.Y+ws.Y then
+        wheelDragging=true
+        updateColourFromPoint(point,true)
+    end
+end)
+UIS.InputChanged:Connect(function(input)
+    if not picker.Visible or not wheelDragging then return end
+    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseMovement then
+        updateColourFromPoint(Vector2.new(input.Position.X,input.Position.Y),true)
+    end
+end)
+UIS.InputEnded:Connect(function(input)
+    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
+        wheelDragging=false
+        if magnifier then magnifier.Visible=false end
+    end
+end)
+
+-- Brightness slider below the wheel.
+local brightnessTrack=new("Frame",{
+    Position=UDim2.new(0,18,0,264),Size=UDim2.new(1,-36,0,12),
+    BackgroundColor3=Color3.fromRGB(45,45,45),BorderSizePixel=0,ZIndex=34
+},picker)
+corner(brightnessTrack,8)
+brightnessFill=new("Frame",{
+    Size=UDim2.new(brightness,0,1,0),BackgroundColor3=currentColor(),
+    BorderSizePixel=0,ZIndex=35
+},brightnessTrack)
+corner(brightnessFill,8)
+new("UIGradient",{Color=ColorSequence.new(Color3.new(0,0,0),Color3.new(1,1,1))},brightnessFill)
+brightnessKnob=new("Frame",{
+    AnchorPoint=Vector2.new(.5,.5),Position=UDim2.new(brightness,0,.5,0),
+    Size=UDim2.fromOffset(18,18),BackgroundColor3=WHITE,
+    BorderSizePixel=0,ZIndex=36
+},brightnessTrack)
+corner(brightnessKnob,9)
+new("UIStroke",{Color=BG,Thickness=1},brightnessKnob)
+local brightnessDragging=false
+local function setBrightnessFromX(x)
+    brightness=math.clamp((x-brightnessTrack.AbsolutePosition.X)/brightnessTrack.AbsoluteSize.X,.08,1)
+    brightnessFill.Size=UDim2.new(brightness,0,1,0)
+    brightnessKnob.Position=UDim2.new(brightness,0,.5,0)
+    applyAccent(currentColor())
+end
+brightnessTrack.InputBegan:Connect(function(input)
+    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
+        brightnessDragging=true
+        setBrightnessFromX(input.Position.X)
+    end
+end)
+UIS.InputChanged:Connect(function(input)
+    if brightnessDragging and (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseMovement) then
+        setBrightnessFromX(input.Position.X)
+    end
+end)
+UIS.InputEnded:Connect(function(input)
+    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then brightnessDragging=false end
+end)
+
 local pickerHint=new("TextLabel",{
-    Position=UDim2.new(0,12,0,250),Size=UDim2.new(1,-24,0,16),
-    BackgroundTransparency=1,Text="SELECT A SHADE, THEN CONFIRM",
+    Position=UDim2.new(0,12,0,282),Size=UDim2.new(1,-24,0,14),
+    BackgroundTransparency=1,Text="DRAG ON THE WHEEL • SLIDE TO ADJUST BRIGHTNESS",
     TextColor3=MUTED,Font=Enum.Font.GothamBold,TextSize=8,ZIndex=32
 },picker)
 
 doneButton=new("TextButton",{
-    Position=UDim2.new(0,14,0,278),Size=UDim2.new(.5,-20,0,38),
+    Position=UDim2.new(0,14,0,305),Size=UDim2.new(.5,-20,0,36),
     BackgroundColor3=ACCENT,Text="DONE",
     TextColor3=BG,Font=Enum.Font.GothamBlack,TextSize=11,
     AutoButtonColor=false,ZIndex=33
 },picker)
 corner(doneButton,8)
 local cancelButton=new("TextButton",{
-    AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-14,0,278),
-    Size=UDim2.new(.5,-20,0,38),BackgroundColor3=CARD,
+    AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-14,0,305),
+    Size=UDim2.new(.5,-20,0,36),BackgroundColor3=CARD,
     Text="CLOSE",TextColor3=WHITE,Font=Enum.Font.GothamBold,
     TextSize=11,AutoButtonColor=false,ZIndex=33
 },picker)
@@ -512,9 +618,9 @@ local function openPicker()
     pickerShade.Visible=true
     pickerShade.BackgroundTransparency=1
     tween(pickerShade,.22,{BackgroundTransparency=.28})
-    picker.Size=UDim2.fromOffset(270,310)
+    picker.Size=UDim2.fromOffset(270,330)
     picker.BackgroundTransparency=1
-    tween(picker,.26,{Size=UDim2.fromOffset(300,340),BackgroundTransparency=0},Enum.EasingStyle.Back)
+    tween(picker,.26,{Size=UDim2.fromOffset(300,360),BackgroundTransparency=0},Enum.EasingStyle.Back)
 end
 
 local pickerClosing=false
@@ -527,12 +633,12 @@ local function finishPicker(keepSelection)
         applyAccent(committedAccent)
     end
     tween(pickerShade,.18,{BackgroundTransparency=1})
-    tween(picker,.18,{Size=UDim2.fromOffset(270,310),BackgroundTransparency=1})
+    tween(picker,.18,{Size=UDim2.fromOffset(270,330),BackgroundTransparency=1})
     task.delay(.19,function()
         picker.Visible=false
         pickerShade.Visible=false
         main.Visible=true
-        picker.Size=UDim2.fromOffset(300,340)
+        picker.Size=UDim2.fromOffset(300,360)
         picker.BackgroundTransparency=0
         pickerClosing=false
     end)
