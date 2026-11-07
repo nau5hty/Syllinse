@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V8.9 | CONTINUOUS COLOUR DISC
+-- SYLLINSE V9.0 | MOVABLE TOGGLE + REFINED COLOUR DISC
 -- UI-only dashboard build
 --========================================================
 
@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V8.9 CONTINUOUS COLOUR DISC"
+local VERSION = "V9.0 MOVABLE TOGGLE + REFINED COLOUR DISC"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -445,25 +445,25 @@ local function currentColor()
     return Color3.fromHSV(hue,saturation,brightness)
 end
 
--- Continuous radial HSV disc. Dense overlapping gradient strips create a
--- solid colour field rather than a grid of separate dots.
+-- Continuous HSV colour disc: overlapping radial gradient blades.
+-- The blades overlap enough to hide seams and avoid the dotted appearance.
 for i=0,719 do
     local angle=i*0.5
     local hueValue=((angle/360)+.75)%1
     local slice=new("Frame",{
         AnchorPoint=Vector2.new(.5,1),
-        Position=UDim2.new(.5,0,.5,0),
-        Size=UDim2.fromOffset(2.2,96),
+        Position=UDim2.fromScale(.5,.5),
+        Size=UDim2.fromOffset(3.4,98),
         Rotation=angle,
-        BackgroundColor3=Color3.new(1,1,1),
+        BackgroundColor3=Color3.fromHSV(hueValue,1,1),
         BorderSizePixel=0,
         ZIndex=33
     },wheel)
     new("UIGradient",{
         Rotation=90,
         Color=ColorSequence.new({
-            ColorSequenceKeypoint.new(0,Color3.fromHSV(hueValue,1,1)),
-            ColorSequenceKeypoint.new(1,Color3.new(1,1,1))
+            ColorSequenceKeypoint.new(0,Color3.new(1,1,1)),
+            ColorSequenceKeypoint.new(1,Color3.fromHSV(hueValue,1,1))
         })
     },slice)
 end
@@ -710,6 +710,48 @@ local floating=new("TextButton",{
 },gui)
 corner(floating,22)
 
+-- Drag the floating toggle anywhere on screen. A short tap still toggles it.
+local floatingPress, floatingStart, floatingOrigin
+local floatingMoved=false
+local floatingDragging=false
+floating.InputBegan:Connect(function(input)
+    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
+        floatingPress=input
+        floatingStart=Vector2.new(input.Position.X,input.Position.Y)
+        floatingOrigin=floating.Position
+        floatingMoved=false
+        floatingDragging=true
+    end
+end)
+UIS.InputChanged:Connect(function(input)
+    if not floatingDragging or not floatingPress then return end
+    local isMove=(input.UserInputType==Enum.UserInputType.Touch and input==floatingPress)
+        or input.UserInputType==Enum.UserInputType.MouseMovement
+    if not isMove then return end
+    local point=Vector2.new(input.Position.X,input.Position.Y)
+    local delta=point-floatingStart
+    if delta.Magnitude>7 then floatingMoved=true end
+    if floatingMoved then
+        floating.Position=UDim2.new(
+            floatingOrigin.X.Scale,floatingOrigin.X.Offset+delta.X,
+            floatingOrigin.Y.Scale,floatingOrigin.Y.Offset+delta.Y
+        )
+    end
+end)
+UIS.InputEnded:Connect(function(input)
+    if not floatingDragging or not floatingPress then return end
+    local ended=(input==floatingPress)
+        or (floatingPress.UserInputType==Enum.UserInputType.MouseButton1 and input.UserInputType==Enum.UserInputType.MouseButton1)
+    if ended then
+        local wasMoved=floatingMoved
+        floatingDragging=false
+        floatingPress=nil
+        if not wasMoved then
+            if main.Visible or picker.Visible then hideWindow() else showWindow() end
+        end
+    end
+end)
+
 -- Window dragging
 local dragging, dragStart, startPos=false,nil,nil
 top.InputBegan:Connect(function(input)
@@ -757,13 +799,6 @@ local function showWindow()
     task.delay(.24,function() animating=false end)
 end
 close.Activated:Connect(hideWindow)
-floating.Activated:Connect(function()
-    if main.Visible or picker.Visible then
-        hideWindow()
-    else
-        showWindow()
-    end
-end)
 
 -- Responsive sizing
 local scale=new("UIScale",{Scale=1},main)
@@ -797,9 +832,9 @@ local finalPosition=UDim2.new(0.5,-285,0.5,-180)
 main.Position=UDim2.new(0.5,-285,0.5,-166)
 local finalScale=scale.Scale
 scale.Scale=finalScale*.96
-tween(backdrop,.8,{BackgroundTransparency=.43},Enum.EasingStyle.Quart)
-tween(main,.8,{Position=finalPosition},Enum.EasingStyle.Quart)
-tween(scale,.8,{Scale=finalScale},Enum.EasingStyle.Quart)
-setFade(initialFade,0,.8)
+tween(backdrop,1.2,{BackgroundTransparency=.43},Enum.EasingStyle.Quart)
+tween(main,1.2,{Position=finalPosition},Enum.EasingStyle.Quart)
+tween(scale,1.2,{Scale=finalScale},Enum.EasingStyle.Quart)
+setFade(initialFade,0,1.2)
 
 print("[SYLLINSE] "..VERSION.." loaded")
