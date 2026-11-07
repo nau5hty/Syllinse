@@ -464,7 +464,7 @@ for column=0,columnCount-1 do
             local t=sample/18
             local ny=((t-.5)*2*halfHeight)/wheelRadius
             local radial=math.clamp(math.sqrt(nx*nx+ny*ny),0,1)
-            local angle=(math.atan2(ny,nx)/(math.pi*2)+.5)%1
+            local angle=(math.atan2(ny,nx)/(math.pi*2))%1
             local colour=Color3.fromHSV(angle,radial,1)
             keypoints[#keypoints+1]=ColorSequenceKeypoint.new(t,colour)
         end
