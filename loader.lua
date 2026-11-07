@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V9.8 | ATTACHED MOVING DOCK
+-- SYLLINSE V9.9 | DOCK LOCK + GOLD GLOW
 -- UI-only dashboard build
 --========================================================
 
@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V9.8 ATTACHED MOVING DOCK"
+local VERSION = "V9.9 DOCK LOCK + GOLD GLOW"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -115,7 +115,10 @@ local main = new("Frame", {
 corner(main, 12)
 -- Declare scale before hide/show callbacks so they capture this local instance.
 local scale=new("UIScale",{Scale=1},main)
-local mainStroke = new("UIStroke", {Color=ACCENT, Transparency=0.3, Thickness=1}, main)
+local mainGlow = new("UIStroke", {Color=GOLD, Transparency=0.68, Thickness=5}, main)
+local mainStroke = new("UIStroke", {Color=GOLD, Transparency=0.12, Thickness=1.6}, main)
+local mainGlowTween=TweenService:Create(mainGlow,TweenInfo.new(1.5,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut,-1,true),{Transparency=.38,Thickness=7})
+mainGlowTween:Play()
 
 local top = new("Frame", {
     Size=UDim2.new(1,0,0,46), BackgroundColor3=PANEL,
@@ -750,18 +753,21 @@ local dock=new("Frame",{
     Size=UDim2.fromOffset(44,176),
     BackgroundTransparency=1,
     Visible=false,
-    ZIndex=70
-},gui)
+    ZIndex=201
+},floating)
 local dockScale=new("UIScale",{Scale=1},dock)
 local dockBase=new("Frame",{
     Name="DockBase",
     Position=UDim2.fromOffset(0,0),
     Size=UDim2.fromOffset(44,176),
     BackgroundColor3=Color3.fromRGB(19,19,20),
-    BorderSizePixel=0,ZIndex=70
+    BorderSizePixel=0,ZIndex=202
 },dock)
 corner(dockBase,30)
-new("UIStroke",{Color=Color3.fromRGB(3,3,4),Thickness=2,Transparency=.05},dockBase)
+local dockGlow=new("UIStroke",{Color=GOLD,Thickness=6,Transparency=.58},dockBase)
+local dockStroke=new("UIStroke",{Color=GOLD,Thickness=1.6,Transparency=.08},dockBase)
+local dockGlowTween=TweenService:Create(dockGlow,TweenInfo.new(1.35,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut,-1,true),{Transparency=.28,Thickness=8})
+dockGlowTween:Play()
 
 local dockButtons={}
 local showWindow -- forward declaration: dock actions must call the local window opener
@@ -775,13 +781,13 @@ for index,info in ipairs(dockTabs) do
         BackgroundTransparency=1,
         Text=glyph,TextColor3=Color3.fromRGB(205,205,205),
         Font=Enum.Font.Gotham,TextSize=29,
-        AutoButtonColor=false,ZIndex=72
+        AutoButtonColor=false,ZIndex=203
     },dockBase)
     if index<3 then
         new("Frame",{
             Position=UDim2.new(0,13,1,-1),Size=UDim2.fromOffset(32,1),
             BackgroundColor3=Color3.fromRGB(5,5,6),
-            BorderSizePixel=0,ZIndex=73
+            BorderSizePixel=0,ZIndex=204
         },button)
     end
     local underline=new("Frame",{
@@ -886,38 +892,16 @@ local holdTriggered=false
 local holdToken=0
 local HOLD_TIME=.48
 
-local function dockTargetPosition()
-    local togglePos=floating.AbsolutePosition
-    local toggleSize=floating.AbsoluteSize
-    local centerX=togglePos.X+toggleSize.X/2
-    local centerY=togglePos.Y+toggleSize.Y/2
-    return UDim2.fromOffset(centerX,centerY)
-end
-
-local function syncDockToToggle()
-    if not dock.Visible then return end
-    dock.Position=dockTargetPosition()
-end
-
--- Keep the dock aligned with the toggle, including while it is dragged.
-floating:GetPropertyChangedSignal("AbsolutePosition"):Connect(syncDockToToggle)
-floating:GetPropertyChangedSignal("AbsoluteSize"):Connect(syncDockToToggle)
-
 local function revealDock()
     if animating then return end
-    local target=dockTargetPosition()
-    local togglePos=floating.AbsolutePosition
-    local toggleSize=floating.AbsoluteSize
-    local centerX=togglePos.X+toggleSize.X/2
-    local centerY=togglePos.Y+toggleSize.Y/2
-    -- The dock stays behind the toggle; its bottom meets the circle's midpoint.
+    -- Dock is parented to the toggle, so it shares the toggle position while dragged.
     dock.AnchorPoint=Vector2.new(.5,1)
-    dock.Position=UDim2.fromOffset(centerX,centerY+9)
+    dock.Position=UDim2.new(.5,0,0,30)
     dock.Visible=true
     dockScale.Scale=.96
     tween(floating,.46,{Rotation=180},Enum.EasingStyle.Quart)
     tween(dockScale,.46,{Scale=1},Enum.EasingStyle.Quart)
-    tween(dock,.46,{Position=target},Enum.EasingStyle.Quart)
+    tween(dock,.46,{Position=UDim2.new(.5,0,0,22)},Enum.EasingStyle.Quart)
 end
 
 floating.InputBegan:Connect(function(input)
