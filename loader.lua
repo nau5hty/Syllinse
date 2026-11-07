@@ -125,6 +125,27 @@ local top = new("Frame", {
     BorderSizePixel=0, Active=true, ZIndex=3
 }, main)
 corner(top, 16)
+new("UIGradient",{Rotation=0,Color=ColorSequence.new(Color3.fromRGB(22,23,26),Color3.fromRGB(11,12,14))},top)
+new("Frame",{
+    Name="HeaderGoldRule",Position=UDim2.new(0,18,1,-2),
+    Size=UDim2.new(1,-36,0,1),BackgroundColor3=GOLD,
+    BorderSizePixel=0,ZIndex=4
+},top)
+local livePill=new("Frame",{
+    Name="LiveStatus",AnchorPoint=Vector2.new(1,.5),
+    Position=UDim2.new(1,-54,.5,0),Size=UDim2.fromOffset(58,22),
+    BackgroundColor3=Color3.fromRGB(27,29,25),BorderSizePixel=0,ZIndex=4
+},top)
+corner(livePill,11)
+new("Frame",{
+    Position=UDim2.fromOffset(8,8),Size=UDim2.fromOffset(6,6),
+    BackgroundColor3=Color3.fromRGB(110,220,145),BorderSizePixel=0,ZIndex=5
+},livePill)
+new("TextLabel",{
+    Position=UDim2.fromOffset(18,0),Size=UDim2.new(1,-20,1,0),
+    BackgroundTransparency=1,Text="READY",TextColor3=Color3.fromRGB(170,210,180),
+    Font=Enum.Font.GothamBold,TextSize=8,TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5
+},livePill)
 
 local logo = new("TextLabel", {
     Position=UDim2.fromOffset(19,0), Size=UDim2.fromOffset(155,52),
