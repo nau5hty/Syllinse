@@ -868,6 +868,7 @@ local function hideWindow()
     pickerShade.Visible=false
     pickerClosing=false
     wheelDragging=false
+    dock.Visible=false
     local shownScale=scale.Scale
     tween(backdrop,1.2,{BackgroundTransparency=1},Enum.EasingStyle.Quart)
     tween(scale,1.2,{Scale=shownScale*.96},Enum.EasingStyle.Quart)
@@ -882,6 +883,7 @@ local function showWindow()
     if animating or main.Visible or picker.Visible then return end
     animating=true
     main.Visible=true
+    dock.Visible=true
     local shownScale=scale.Scale
     scale.Scale=shownScale*.96
     setFade(mainFadeTargets,1,0)
