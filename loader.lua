@@ -605,6 +605,7 @@ end)
 
 -- Floating reopen button
 local floating=new("TextButton",{
+    Name="FloatingToggle",
     AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,-12,.5,0),
     Size=UDim2.fromOffset(44,44),BackgroundColor3=ACCENT,
     Text="S",TextColor3=BG,Font=Enum.Font.GothamBlack,
