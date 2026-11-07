@@ -742,12 +742,12 @@ local floating=new("TextButton",{
 },gui)
 corner(floating,22)
 
--- Vertical floating dock: slides out from behind the S toggle like an eraser sleeve.
+-- Compact vertical dock: same 44px footprint as the floating toggle, attached edge-to-edge.
 local dock=new("Frame",{
     Name="FloatingNavigationDock",
     AnchorPoint=Vector2.new(1,.5),
     Position=UDim2.fromOffset(0,0),
-    Size=UDim2.fromOffset(74,252),
+    Size=UDim2.fromOffset(44,176),
     BackgroundTransparency=1,
     Visible=false,
     ZIndex=70
@@ -755,8 +755,8 @@ local dock=new("Frame",{
 local dockScale=new("UIScale",{Scale=1},dock)
 local dockBase=new("Frame",{
     Name="DockBase",
-    Position=UDim2.fromOffset(0,4),
-    Size=UDim2.fromOffset(66,244),
+    Position=UDim2.fromOffset(0,0),
+    Size=UDim2.fromOffset(44,176),
     BackgroundColor3=Color3.fromRGB(19,19,20),
     BorderSizePixel=0,ZIndex=70
 },dock)
@@ -764,13 +764,14 @@ corner(dockBase,30)
 new("UIStroke",{Color=Color3.fromRGB(3,3,4),Thickness=2,Transparency=.05},dockBase)
 
 local dockButtons={}
+local showWindow -- forward declaration: dock actions must call the local window opener
 local dockTabs={{"Home","⌂"},{"Player","▤"},{"About","♙"}}
 for index,info in ipairs(dockTabs) do
     local tabName,glyph=info[1],info[2]
     local button=new("TextButton",{
         Name="Dock"..tabName,
-        Position=UDim2.fromOffset(4,5+(index-1)*58),
-        Size=UDim2.fromOffset(58,54),
+        Position=UDim2.fromOffset(0,(index-1)*44),
+        Size=UDim2.fromOffset(44,44),
         BackgroundTransparency=1,
         Text=glyph,TextColor3=Color3.fromRGB(205,205,205),
         Font=Enum.Font.Gotham,TextSize=29,
@@ -797,8 +798,8 @@ for index,info in ipairs(dockTabs) do
 end
 
 local menuButton=new("TextButton",{
-    Name="DockMenuButton",Position=UDim2.fromOffset(4,187),
-    Size=UDim2.fromOffset(58,50),BackgroundColor3=Color3.fromRGB(22,20,16),
+    Name="DockMenuButton",Position=UDim2.fromOffset(0,132),
+    Size=UDim2.fromOffset(44,44),BackgroundColor3=Color3.fromRGB(22,20,16),
     BorderSizePixel=0,Text="☰",TextColor3=WHITE,
     Font=Enum.Font.Gotham,TextSize=25,AutoButtonColor=false,ZIndex=72
 },dockBase)
@@ -841,7 +842,6 @@ end
 -- The X hides the dashboard; the floating S restores it.
 local mainFadeTargets=collectFadeTargets(main)
 local animating=false
-local showWindow
 local function hideWindow()
     if animating or (not main.Visible and not picker.Visible) then return end
     animating=true
@@ -890,10 +890,10 @@ local function revealDock()
     if animating then return end
     local togglePos=floating.AbsolutePosition
     local toggleSize=floating.AbsoluteSize
-    local endX=togglePos.X-10
+    local endX=togglePos.X
     local centerY=togglePos.Y+toggleSize.Y/2
     dock.AnchorPoint=Vector2.new(1,.5)
-    dock.Position=UDim2.fromOffset(endX+58,centerY)
+    dock.Position=UDim2.fromOffset(endX+48,centerY)
     dock.Visible=true
     dockScale.Scale=1
     tween(dock,.42,{Position=UDim2.fromOffset(endX,centerY)},Enum.EasingStyle.Quart)
