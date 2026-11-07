@@ -882,7 +882,10 @@ local function showWindow()
     setFade(mainFadeTargets,0,1.2)
     task.delay(1.22,function() animating=false end)
 end
-close.Activated:Connect(function()\n    dock.Visible=false\n    hideWindow()\nend)
+close.Activated:Connect(function()
+    dock.Visible=false
+    hideWindow()
+end)
 -- Floating toggle: short tap hides/shows, hold reveals dock, drag moves it.
 local floatingPress,floatingStart,floatingOrigin
 local floatingMoved=false
