@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V8.4 | MOBILE INPUT FIX
+-- SYLLINSE V8.5 | TOUCH WHEEL + TOGGLE
 -- UI-only dashboard build
 --========================================================
 
@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V8.4 MOBILE FIX"
+local VERSION = "V8.5 TOUCH + MOTION"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -395,7 +395,7 @@ new("TextLabel",{
     TextXAlignment=Enum.TextXAlignment.Left,ZIndex=32
 },picker)
 
--- The wheel is constrained to a square and rounded to exactly half its size.
+-- Circular colour wheel made from real touch-friendly buttons.
 local wheel=new("Frame",{
     AnchorPoint=Vector2.new(.5,.5),Position=UDim2.new(.5,0,0,151),
     Size=UDim2.fromOffset(190,190),BackgroundColor3=CARD,
@@ -405,16 +405,51 @@ new("UIAspectRatioConstraint",{AspectRatio=1,AspectType=Enum.AspectType.ScaleWit
 corner(wheel,95)
 new("UIStroke",{Color=Color3.fromRGB(75,75,75),Transparency=.25,Thickness=1},wheel)
 
+local hue=.12
+local wheelDragging=false
+local committedAccent=ACCENT
+local function applyAccent(color)
+    ACCENT=color
+    tween(logo,.16,{TextColor3=color})
+    tween(themeButton,.16,{TextColor3=color})
+    tween(mainStroke,.16,{Color=color})
+    tween(pickerStroke,.16,{Color=color})
+    tween(wheelCenter,.12,{BackgroundColor3=color})
+    tween(doneButton,.12,{BackgroundColor3=color})
+    local floatingButton=gui:FindFirstChild("FloatingToggle")
+    if floatingButton then tween(floatingButton,.16,{BackgroundColor3=color}) end
+    for _,data in pairs(tabs) do
+        tween(data.indicator,.16,{BackgroundColor3=color})
+    end
+    for _,obj in ipairs(gui:GetDescendants()) do
+        if obj:IsA("UIStroke") then obj.Color=color end
+        if obj:IsA("TextButton") and obj.Text=="OPEN" then obj.BackgroundColor3=color end
+    end
+    fpsValue.TextColor3=color
+    pingValue.TextColor3=color
+    sessionValue.TextColor3=color
+    launchValue.TextColor3=color
+end
+
+local function chooseHue(value)
+    hue=value%1
+    applyAccent(Color3.fromHSV(hue,.88,.98))
+end
+
 for i=0,71 do
     local angle=(i/72)*math.pi*2-math.pi/2
-    local dot=new("Frame",{
+    local hueValue=i/72
+    local dot=new("TextButton",{
         AnchorPoint=Vector2.new(.5,.5),
         Position=UDim2.new(.5,math.cos(angle)*79,.5,math.sin(angle)*79),
-        Size=UDim2.fromOffset(13,13),
-        BackgroundColor3=Color3.fromHSV(i/72,.88,.98),
-        BorderSizePixel=0,ZIndex=34
+        Size=UDim2.fromOffset(17,17),
+        BackgroundColor3=Color3.fromHSV(hueValue,.88,.98),
+        BorderSizePixel=0,Text="",AutoButtonColor=false,ZIndex=34
     },wheel)
-    corner(dot,7)
+    corner(dot,9)
+    dot.Activated:Connect(function()
+        chooseHue(hueValue)
+    end)
 end
 
 local wheelCenter=new("Frame",{
@@ -432,7 +467,6 @@ new("TextLabel",{
     TextSize=11,ZIndex=36
 },wheelCenter)
 
--- Transparent input layer keeps every part of the wheel selectable on touch.
 local pickerHint=new("TextLabel",{
     Position=UDim2.new(0,12,0,250),Size=UDim2.new(1,-24,0,16),
     BackgroundTransparency=1,Text="SELECT A SHADE, THEN CONFIRM",
@@ -454,45 +488,6 @@ local cancelButton=new("TextButton",{
 },picker)
 corner(cancelButton,8)
 new("UIStroke",{Color=MUTED,Transparency=.65,Thickness=1},cancelButton)
-
-local hue=.12
-local wheelDragging=false
-local committedAccent=ACCENT
-local function applyAccent(color)
-    ACCENT=color
-    tween(logo,.16,{TextColor3=color})
-    tween(themeButton,.16,{TextColor3=color})
-    tween(mainStroke,.16,{Color=color})
-    tween(pickerStroke,.16,{Color=color})
-    tween(wheelCenter,.12,{BackgroundColor3=color})
-    tween(doneButton,.12,{BackgroundColor3=color})
-    local floatingButton=gui:FindFirstChild("FloatingToggle")
-    if floatingButton then tween(floatingButton,.16,{BackgroundColor3=color}) end
-    for _,data in pairs(tabs) do
-        tween(data.indicator,.16,{BackgroundColor3=color})
-        if data.name=="Home" then
-            -- Selected tab text is refreshed by the tab handler.
-        end
-    end
-    for _,obj in ipairs(gui:GetDescendants()) do
-        if obj:IsA("UIStroke") then obj.Color=color end
-        if obj:IsA("TextButton") and obj.Text=="OPEN" then obj.BackgroundColor3=color end
-    end
-    fpsValue.TextColor3=color
-    pingValue.TextColor3=color
-    sessionValue.TextColor3=color
-    launchValue.TextColor3=color
-end
-
-local function setWheelColor(point)
-    local center=wheel.AbsolutePosition+wheel.AbsoluteSize/2
-    local delta=point-center
-    local angle=math.atan2(delta.Y,delta.X)
-    hue=(angle/(math.pi*2)+.25)%1
-    local radius=math.clamp(delta.Magnitude/(wheel.AbsoluteSize.X/2),.18,1)
-    local saturation=math.clamp(.35+radius*.62,.35,.97)
-    applyAccent(Color3.fromHSV(hue,saturation,.96))
-end
 
 local function openPicker()
     if picker.Visible then return end
@@ -531,35 +526,6 @@ end
 themeButton.Activated:Connect(openPicker)
 doneButton.Activated:Connect(function() finishPicker(true) end)
 cancelButton.Activated:Connect(function() finishPicker(false) end)
-
-local function pointInside(guiObject, point)
-    local p=guiObject.AbsolutePosition
-    local z=guiObject.AbsoluteSize
-    return point.X>=p.X and point.X<=p.X+z.X and point.Y>=p.Y and point.Y<=p.Y+z.Y
-end
-
--- Global coordinate hit-testing is reliable for touch screens and mouse input.
-UIS.InputBegan:Connect(function(input)
-    if not picker.Visible then return end
-    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
-        if pointInside(wheel,input.Position) then
-            wheelDragging=true
-            setWheelColor(input.Position)
-        end
-    end
-end)
-UIS.InputChanged:Connect(function(input)
-    if wheelDragging and picker.Visible and
-        (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseMovement) then
-        setWheelColor(input.Position)
-    end
-end)
-UIS.InputEnded:Connect(function(input)
-    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
-        wheelDragging=false
-    end
-end)
-
 
 -- Tabs slide horizontally and support left/right touch swipes.
 local currentTab="Home"
@@ -669,7 +635,7 @@ local function showWindow()
     task.delay(.24,function() animating=false end)
 end
 close.Activated:Connect(hideWindow)
-floating.Activated:Connect(showWindow)
+floating.Activated:Connect(function()\n    if main.Visible then hideWindow() else showWindow() end\nend)
 
 -- Responsive sizing
 local scale=new("UIScale",{Scale=1},main)
@@ -684,7 +650,7 @@ if workspace.CurrentCamera then
     workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
 end
 
--- Initial selected tab and initial natural fade.
+-- Initial selected tab and smooth execution fade-in.
 pages.Home.Visible=true
 for name,data in pairs(tabs) do
     local selected=name=="Home"
