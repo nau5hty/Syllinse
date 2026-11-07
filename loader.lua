@@ -785,7 +785,7 @@ local menuButton=new("TextButton",{
     Name="DockMenuButton",Position=UDim2.fromOffset(244,0),
     Size=UDim2.fromOffset(66,66),BackgroundColor3=Color3.fromRGB(22,20,16),
     BorderSizePixel=0,Text="═",TextColor3=WHITE,
-    Font=Enum.Font.GothamLight,TextSize=32,AutoButtonColor=false,ZIndex=72
+    Font=Enum.Font.Gotham,TextSize=32,AutoButtonColor=false,ZIndex=72
 },dock)
 corner(menuButton,21)
 local menuGlow=new("UIStroke",{Color=GOLD,Thickness=3,Transparency=.08},menuButton)
