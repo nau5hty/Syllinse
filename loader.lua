@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V9.7 | UPWARD DOCK + TOGGLE ROTATION
+-- SYLLINSE V9.8 | ATTACHED MOVING DOCK
 -- UI-only dashboard build
 --========================================================
 
@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V9.7 UPWARD DOCK + TOGGLE ROTATION"
+local VERSION = "V9.8 ATTACHED MOVING DOCK"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -886,19 +886,38 @@ local holdTriggered=false
 local holdToken=0
 local HOLD_TIME=.48
 
-local function revealDock()
-    if animating then return end
+local function dockTargetPosition()
     local togglePos=floating.AbsolutePosition
     local toggleSize=floating.AbsoluteSize
     local centerX=togglePos.X+toggleSize.X/2
     local centerY=togglePos.Y+toggleSize.Y/2
-    -- The dock grows upward from behind the toggle; the toggle covers its lower half.
+    return UDim2.fromOffset(centerX,centerY)
+end
+
+local function syncDockToToggle()
+    if not dock.Visible then return end
+    dock.Position=dockTargetPosition()
+end
+
+-- Keep the dock aligned with the toggle, including while it is dragged.
+floating:GetPropertyChangedSignal("AbsolutePosition"):Connect(syncDockToToggle)
+floating:GetPropertyChangedSignal("AbsoluteSize"):Connect(syncDockToToggle)
+
+local function revealDock()
+    if animating then return end
+    local target=dockTargetPosition()
+    local togglePos=floating.AbsolutePosition
+    local toggleSize=floating.AbsoluteSize
+    local centerX=togglePos.X+toggleSize.X/2
+    local centerY=togglePos.Y+toggleSize.Y/2
+    -- The dock stays behind the toggle; its bottom meets the circle's midpoint.
     dock.AnchorPoint=Vector2.new(.5,1)
-    dock.Position=UDim2.fromOffset(centerX,centerY+44)
+    dock.Position=UDim2.fromOffset(centerX,centerY+9)
     dock.Visible=true
-    dockScale.Scale=1
+    dockScale.Scale=.96
     tween(floating,.46,{Rotation=180},Enum.EasingStyle.Quart)
-    tween(dock,.46,{Position=UDim2.fromOffset(centerX,centerY)},Enum.EasingStyle.Quart)
+    tween(dockScale,.46,{Scale=1},Enum.EasingStyle.Quart)
+    tween(dock,.46,{Position=target},Enum.EasingStyle.Quart)
 end
 
 floating.InputBegan:Connect(function(input)
