@@ -929,16 +929,22 @@ end)
 
 UIS.InputEnded:Connect(function(input)
     if not floatingDragging or not floatingPress then return end
-    local ended=(input==floatingPress)
-        or (floatingPress.UserInputType==Enum.UserInputType.MouseButton1 and input.UserInputType==Enum.UserInputType.MouseButton1)
-    if not ended then return end
+    local sameTouch=input.UserInputType==Enum.UserInputType.Touch
+        and floatingPress.UserInputType==Enum.UserInputType.Touch
+    local sameMouse=input.UserInputType==Enum.UserInputType.MouseButton1
+        and floatingPress.UserInputType==Enum.UserInputType.MouseButton1
+    if input~=floatingPress and not sameTouch and not sameMouse then return end
+
     local wasMoved,wasHeld=floatingMoved,holdTriggered
     floatingDragging=false
     floatingPress=nil
     holdToken+=1
+
+    -- A hold is ONLY for showing/hiding the dock. It must never toggle the window.
+    -- A short, unmoved tap is the ONLY gesture that toggles the main window.
     if not wasMoved and not wasHeld then
+        dock.Visible=false
         if main.Visible or picker.Visible then
-            if dock.Visible then dock.Visible=false end
             hideWindow()
         else
             showWindow()
