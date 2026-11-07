@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V9.0 | MOVABLE TOGGLE + REFINED COLOUR DISC
+-- SYLLINSE V9.1 | TRUE RADIAL HSV COLOUR DISC
 -- UI-only dashboard build
 --========================================================
 
@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V9.0 MOVABLE TOGGLE + REFINED COLOUR DISC"
+local VERSION = "V9.1 TRUE RADIAL HSV COLOUR DISC"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -445,42 +445,50 @@ local function currentColor()
     return Color3.fromHSV(hue,saturation,brightness)
 end
 
--- Continuous HSV colour disc: overlapping radial gradient blades.
--- The blades overlap enough to hide seams and avoid the dotted appearance.
-for i=0,719 do
-    local angle=i*0.5
-    local hueValue=((angle/360)+.75)%1
-    local slice=new("Frame",{
-        AnchorPoint=Vector2.new(.5,1),
-        Position=UDim2.fromScale(.5,.5),
-        Size=UDim2.fromOffset(3.4,98),
-        Rotation=angle,
-        BackgroundColor3=Color3.fromHSV(hueValue,1,1),
-        BorderSizePixel=0,
-        ZIndex=33
-    },wheel)
-    new("UIGradient",{
-        Rotation=90,
-        Color=ColorSequence.new({
-            ColorSequenceKeypoint.new(0,Color3.new(1,1,1)),
-            ColorSequenceKeypoint.new(1,Color3.fromHSV(hueValue,1,1))
-        })
-    },slice)
+-- Smooth radial HSV disc rendered as narrow vertical columns.
+-- Each column has its own sampled vertical colour gradient, producing a
+-- genuinely filled 2D colour field without pinwheel wedges or dot gaps.
+local wheelPixels=204
+local wheelRadius=wheelPixels/2-1
+local columnCount=144
+local columnWidth=wheelPixels/columnCount+0.35
+for column=0,columnCount-1 do
+    local px=(column+.5)*wheelPixels/columnCount
+    local nx=(px-wheelPixels/2)/wheelRadius
+    local inside=1-nx*nx
+    if inside>0 then
+        local halfHeight=math.sqrt(inside)*wheelRadius
+        local frameHeight=halfHeight*2
+        local keypoints={}
+        for sample=0,18 do
+            local t=sample/18
+            local ny=((t-.5)*2*halfHeight)/wheelRadius
+            local radial=math.clamp(math.sqrt(nx*nx+ny*ny),0,1)
+            local angle=(math.atan2(ny,nx)/(math.pi*2)+.5)%1
+            local colour=Color3.fromHSV(angle,radial,1)
+            keypoints[#keypoints+1]=ColorSequenceKeypoint.new(t,colour)
+        end
+        local columnFrame=new("Frame",{
+            Position=UDim2.fromOffset(px-columnWidth/2,wheelPixels/2-halfHeight),
+            Size=UDim2.fromOffset(columnWidth,frameHeight),
+            BackgroundColor3=WHITE,
+            BorderSizePixel=0,
+            ZIndex=33
+        },wheel)
+        new("UIGradient",{
+            Rotation=90,
+            Color=ColorSequence.new(keypoints)
+        },columnFrame)
+    end
 end
 
 wheelCenter=new("Frame",{
     AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
-    Size=UDim2.fromOffset(54,54),BackgroundColor3=currentColor(),
-    BorderSizePixel=0,ZIndex=36
+    Size=UDim2.fromOffset(14,14),BackgroundColor3=currentColor(),
+    BorderSizePixel=0,ZIndex=40
 },wheel)
-corner(wheelCenter,27)
-new("UIStroke",{Color=WHITE,Transparency=.35,Thickness=2},wheelCenter)
-new("TextLabel",{
-    AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
-    Size=UDim2.new(1,-6,0,18),BackgroundTransparency=1,
-    Text="●",TextColor3=BG,Font=Enum.Font.GothamBlack,
-    TextSize=13,ZIndex=37
-},wheelCenter)
+corner(wheelCenter,7)
+new("UIStroke",{Color=WHITE,Transparency=0,Thickness=2},wheelCenter)
 
 -- Floating loupe follows the finger and previews the exact selected shade.
 magnifier=new("Frame",{
@@ -507,7 +515,12 @@ local function updateColourFromPoint(point,showLoupe)
     end
     local color=currentColor()
     applyAccent(color)
-    if wheelCenter then wheelCenter.BackgroundColor3=color end
+    if wheelCenter then
+        wheelCenter.BackgroundColor3=color
+        local markerX=wheel.AbsoluteSize.X/2+delta.X
+        local markerY=wheel.AbsoluteSize.Y/2+delta.Y
+        wheelCenter.Position=UDim2.fromOffset(markerX,markerY)
+    end
     if magnifier then
         magnifier.BackgroundColor3=color
         magnifier.Visible=showLoupe
