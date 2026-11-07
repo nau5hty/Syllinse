@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V9.2 | NATIVE CONICAL COLOUR WHEEL + 1.2S FADE
+-- SYLLINSE V9.3 | FLOATING GOLD NAV DOCK + NATIVE COLOUR WHEEL
 -- UI-only dashboard build
 --========================================================
 
@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V9.2 NATIVE COLOUR WHEEL"
+local VERSION = "V9.3 FLOATING GOLD NAV DOCK"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -725,6 +725,107 @@ UIS.InputEnded:Connect(function(input)
     end
     swipeStart=nil
 end)
+
+-- Premium floating navigation dock (keeps the original sidebar available).
+local dock = new("Frame", {
+    Name="FloatingNavigationDock",
+    AnchorPoint=Vector2.new(0.5,1),
+    Position=UDim2.new(0.5,0,1,-28),
+    Size=UDim2.fromOffset(310,66),
+    BackgroundTransparency=1,
+    ZIndex=70
+}, gui)
+
+local dockBase = new("Frame", {
+    Name="DockBase",
+    Position=UDim2.fromOffset(0,3),
+    Size=UDim2.fromOffset(236,60),
+    BackgroundColor3=Color3.fromRGB(17,17,18),
+    BorderSizePixel=0,
+    ZIndex=70
+}, dock)
+corner(dockBase,30)
+new("UIStroke",{Color=Color3.fromRGB(4,4,5),Thickness=2,Transparency=.08},dockBase)
+
+local dockButtons={}
+local dockTabs={{"Home","⌂"},{"Visuals","▤"},{"About","♙"}}
+for index,info in ipairs(dockTabs) do
+    local tabName,glyph=info[1],info[2]
+    local button=new("TextButton",{
+        Name="Dock"..tabName,
+        Position=UDim2.fromOffset(8+(index-1)*74,4),
+        Size=UDim2.fromOffset(70,50),
+        BackgroundTransparency=1,
+        Text=glyph,
+        TextColor3=Color3.fromRGB(205,205,205),
+        Font=Enum.Font.Gotham,
+        TextSize=31,
+        AutoButtonColor=false,
+        ZIndex=72
+    },dockBase)
+    local underline=new("Frame",{
+        Name="GoldIndicator",
+        AnchorPoint=Vector2.new(.5,1),
+        Position=UDim2.new(.5,0,1,-1),
+        Size=UDim2.fromOffset(0,3),
+        BackgroundColor3=GOLD,
+        BorderSizePixel=0,
+        ZIndex=73
+    },button)
+    corner(underline,3)
+    dockButtons[tabName]={button=button,indicator=underline}
+    button.Activated:Connect(function()
+        switchTab(tabName)
+    end)
+end
+
+local menuButton=new("TextButton",{
+    Name="DockMenuButton",
+    Position=UDim2.fromOffset(244,0),
+    Size=UDim2.fromOffset(66,66),
+    BackgroundColor3=Color3.fromRGB(19,18,15),
+    BorderSizePixel=0,
+    Text="=",
+    TextColor3=WHITE,
+    Font=Enum.Font.GothamLight,
+    TextSize=34,
+    AutoButtonColor=false,
+    ZIndex=72
+},dock)
+corner(menuButton,20)
+local menuGlow=new("UIStroke",{Color=GOLD,Thickness=2.5,Transparency=.12},menuButton)
+local menuInner=new("UIStroke",{Color=Color3.fromRGB(255,224,145),Thickness=1,Transparency=.55},menuButton)
+local sidebarExpanded=true
+menuButton.Activated:Connect(function()
+    sidebarExpanded=not sidebarExpanded
+    if sidebarExpanded then
+        sidebar.Visible=true
+        tween(content,.28,{Position=UDim2.fromOffset(143,57),Size=UDim2.new(1,-154,1,-67)},Enum.EasingStyle.Quart)
+        tween(menuGlow,.25,{Transparency=.12,Thickness=2.5})
+    else
+        tween(content,.28,{Position=UDim2.fromOffset(16,57),Size=UDim2.new(1,-32,1,-67)},Enum.EasingStyle.Quart)
+        tween(menuGlow,.25,{Transparency=.48,Thickness=1.5})
+        task.delay(.29,function()
+            if not sidebarExpanded then sidebar.Visible=false end
+        end)
+    end
+end)
+
+local function updateDockSelection(activeName)
+    for name,data in pairs(dockButtons) do
+        local active=name==activeName
+        tween(data.button,.2,{TextColor3=active and WHITE or Color3.fromRGB(155,155,155)})
+        tween(data.indicator,.22,{Size=UDim2.fromOffset(active and 38 or 0,3)})
+    end
+end
+for name,data in pairs(dockButtons) do
+    if name==currentTab then data.indicator.Size=UDim2.fromOffset(38,3) end
+end
+local previousSwitchTab=switchTab
+switchTab=function(name,direction)
+    previousSwitchTab(name,direction)
+    updateDockSelection(name)
+end
 
 -- Floating reopen button
 local floating=new("TextButton",{
