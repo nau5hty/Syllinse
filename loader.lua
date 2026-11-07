@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V10.1 | OURO-INSPIRED VISUAL REDESIGN
+-- SYLLINSE V11.0 | REBUILT INFO DASHBOARD
 -- UI-only dashboard build
 --========================================================
 
@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V10.1  |  OURO INSPIRED"
+local VERSION = "V11.0  |  INFO DASHBOARD"
 local BG = Color3.fromRGB(10, 7, 12)
 local PANEL = Color3.fromRGB(22, 12, 20)
 local CARD = Color3.fromRGB(34, 18, 31)
@@ -105,8 +105,8 @@ local backdrop = new("Frame", {
 
 local main = new("Frame", {
     Name = "Window",
-    Size = UDim2.fromOffset(570, 360),
-    Position = UDim2.new(0.5, -285, 0.5, -180),
+    Size = UDim2.fromOffset(650, 410),
+    Position = UDim2.new(0.5, -325, 0.5, -205),
     BackgroundColor3 = BG,
     BorderSizePixel = 0,
     ZIndex = 2,
@@ -170,31 +170,31 @@ local close = new("TextButton", {
 corner(close, 7)
 
 local sidebar = new("Frame", {
-    Position=UDim2.fromOffset(0,52), Size=UDim2.new(0,140,1,-52),
+    Position=UDim2.fromOffset(0,52), Size=UDim2.new(0,68,1,-52),
     BackgroundColor3=PANEL, BorderSizePixel=0, ZIndex=3
 }, main)
 
 new("TextLabel", {
-    Position=UDim2.fromOffset(16,17), Size=UDim2.new(1,-24,0,18),
-    BackgroundTransparency=1, Text="NAVIGATION", TextColor3=MUTED,
+    Position=UDim2.fromOffset(0,12), Size=UDim2.new(1,0,0,18),
+    BackgroundTransparency=1, Text="MENU", TextColor3=MUTED,
     Font=Enum.Font.GothamBold, TextSize=9,
     TextXAlignment=Enum.TextXAlignment.Left, ZIndex=4
 }, sidebar)
 
 local nav = new("Frame", {
-    Position=UDim2.fromOffset(9,46), Size=UDim2.new(1,-18,0,220),
+    Position=UDim2.fromOffset(10,42), Size=UDim2.new(1,-20,0,270),
     BackgroundTransparency=1, ZIndex=4
 }, sidebar)
 new("UIListLayout", {Padding=UDim.new(0,6), SortOrder=Enum.SortOrder.LayoutOrder}, nav)
 
 local content = new("Frame", {
-    Position=UDim2.fromOffset(151,64), Size=UDim2.new(1,-163,1,-74),
+    Position=UDim2.fromOffset(82,64), Size=UDim2.new(1,-94,1,-74),
     BackgroundTransparency=1, ClipsDescendants=true, ZIndex=3
 }, main)
 
 local heading = new("TextLabel", {
     Size=UDim2.new(1,0,0,30), BackgroundTransparency=1,
-    Text="Home", TextColor3=WHITE, Font=Enum.Font.GothamBold,
+    Text="INFO  /  OVERVIEW", TextColor3=WHITE, Font=Enum.Font.GothamBold,
     TextSize=18, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=4
 }, content)
 
@@ -223,15 +223,15 @@ end
 for _, info in ipairs(tabInfo) do
     local name, symbol = info[1], info[2]
     local button = new("TextButton", {
-        Size=UDim2.new(1,0,0,35), BackgroundColor3=PANEL,
-        Text="   "..symbol.."    "..name, TextColor3=MUTED,
-        Font=Enum.Font.GothamSemibold, TextSize=11,
-        TextXAlignment=Enum.TextXAlignment.Left,
+        Size=UDim2.new(1,0,0,42), BackgroundColor3=PANEL,
+        Text=symbol, TextColor3=MUTED,
+        Font=Enum.Font.GothamBold, TextSize=20,
+        TextXAlignment=Enum.TextXAlignment.Center,
         AutoButtonColor=false, ZIndex=5
     }, nav)
     corner(button, 10)
     local indicator = new("Frame", {
-        Size=UDim2.new(0,3,0,0), Position=UDim2.fromOffset(0,17),
+        Size=UDim2.new(0,3,0,0), Position=UDim2.fromOffset(0,21),
         BackgroundColor3=ACCENT, BorderSizePixel=0, ZIndex=6
     }, button)
     corner(indicator, 4)
@@ -362,9 +362,23 @@ local fpsValue = addStat(pages.Home,"FPS","--")
 local pingValue = addStat(pages.Home,"PING","--")
 local sessionValue = addStat(pages.Home,"SESSION TIME","00:00")
 local launchValue = addStat(pages.Home,"LOCAL LAUNCHES",tostring(_G.SYLLINSE_LAUNCHES))
-local gameCard = createCard(pages.Home,"CURRENT GAME",game.Name)
-createCard(pages.Home,"SCRIPT VERSION",VERSION)
-createCard(pages.Home,"GLOBAL EXECUTIONS","Not connected to a statistics service")
+local gameCard = createCard(pages.Home,"CURRENT EXPERIENCE",game.Name)
+createCard(pages.Home,"BUILD",VERSION)
+local sessionCard = createCard(pages.Home,"SESSION","Live session information")
+local sessionInfo = new("TextLabel",{
+    Position=UDim2.fromOffset(10,48),Size=UDim2.new(1,-20,0,22),
+    BackgroundTransparency=1,Text="Player  "..player.Name.."   |   Players  "..tostring(#Players:GetPlayers()),
+    TextColor3=ACCENT,Font=Enum.Font.GothamSemibold,TextSize=10,
+    TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6
+},sessionCard)
+local userCard = createCard(pages.Home,"USER STATUS","Local interface status")
+new("TextLabel",{
+    Position=UDim2.fromOffset(10,48),Size=UDim2.new(1,-20,0,22),
+    BackgroundTransparency=1,Text="SYLLINSE UI  |  READY",
+    TextColor3=Color3.fromRGB(130,220,160),Font=Enum.Font.GothamBold,
+    TextSize=10,TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6
+},userCard)
+createCard(pages.Home,"NOTICE","Statistics shown here are local to this session.")
 
 -- Demo-only controls: these do not modify gameplay.
 addToggle(pages.Player,"Player Demo","UI demonstration switch",function(v) print("Player demo:",v) end)
@@ -378,8 +392,9 @@ addButton(pages.Settings,"Refresh","Refresh dashboard values",function()
     launchValue.Text=tostring(_G.SYLLINSE_LAUNCHES)
     local label=gameCard:FindFirstChildWhichIsA("TextLabel")
     if label then label.Text=game.Name end
+     sessionInfo.Text="Player  "..player.Name.."   |   Players  "..tostring(#Players:GetPlayers())
 end)
-addButton(pages.About,"SYLLINSE V10.1","Ouro-Inspired Edition",function() print(VERSION) end)
+addButton(pages.About,"SYLLINSE V11.0","Ouro-Inspired Edition",function() print(VERSION) end)
 addButton(pages.About,"Developer","SYLLINSE project",function() print("SYLLINSE") end)
 
 -- Live stats
