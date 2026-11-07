@@ -408,6 +408,8 @@ new("UIStroke",{Color=Color3.fromRGB(75,75,75),Transparency=.25,Thickness=1},whe
 local hue=.12
 local wheelDragging=false
 local committedAccent=ACCENT
+local wheelCenter
+local doneButton
 local function applyAccent(color)
     ACCENT=color
     tween(logo,.16,{TextColor3=color})
@@ -452,7 +454,7 @@ for i=0,71 do
     end)
 end
 
-local wheelCenter=new("Frame",{
+wheelCenter=new("Frame",{
     AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
     Size=UDim2.fromOffset(108,108),BackgroundColor3=ACCENT,
     BorderSizePixel=0,ZIndex=35
@@ -473,7 +475,7 @@ local pickerHint=new("TextLabel",{
     TextColor3=MUTED,Font=Enum.Font.GothamBold,TextSize=8,ZIndex=32
 },picker)
 
-local doneButton=new("TextButton",{
+doneButton=new("TextButton",{
     Position=UDim2.new(0,14,0,278),Size=UDim2.new(.5,-20,0,38),
     BackgroundColor3=ACCENT,Text="DONE",
     TextColor3=BG,Font=Enum.Font.GothamBlack,TextSize=11,
@@ -635,7 +637,13 @@ local function showWindow()
     task.delay(.24,function() animating=false end)
 end
 close.Activated:Connect(hideWindow)
-floating.Activated:Connect(function()\n    if main.Visible then hideWindow() else showWindow() end\nend)
+floating.Activated:Connect(function()
+    if main.Visible then
+        hideWindow()
+    else
+        showWindow()
+    end
+end)
 
 -- Responsive sizing
 local scale=new("UIScale",{Scale=1},main)
