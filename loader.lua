@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V8.7 | PRECISION COLOUR PICKER
+-- SYLLINSE V8.8 | SMOOTH COLOUR WHEEL
 -- UI-only dashboard build
 --========================================================
 
@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V8.7 PRECISION COLOUR PICKER"
+local VERSION = "V8.8 SMOOTH COLOUR WHEEL"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -445,24 +445,27 @@ local function currentColor()
     return Color3.fromHSV(hue,saturation,brightness)
 end
 
--- A dense radial dot field approximates a continuous hue/saturation disc.
-for gy=-10,10 do
-    for gx=-10,10 do
-        local radius=math.sqrt(gx*gx+gy*gy)/10
-        if radius<=1 then
-            local angle=math.atan2(gy,gx)
-            local cellHue=((angle/(math.pi*2))%1)
-            local cellSat=math.clamp(radius,0,1)
-            local dot=new("Frame",{
-                AnchorPoint=Vector2.new(.5,.5),
-                Position=UDim2.new(.5,gx*9,.5,gy*9),
-                Size=UDim2.fromOffset(10,10),
-                BackgroundColor3=Color3.fromHSV(cellHue,cellSat,1),
-                BorderSizePixel=0,ZIndex=33
-            },wheel)
-            corner(dot,5)
-        end
-    end
+-- Smooth radial colour disc built from overlapping gradient slices.
+-- Each narrow slice blends from white at the centre to its hue at the rim.
+for i=0,359 do
+    local angle=i
+    local hueValue=((angle/360)+.75)%1
+    local slice=new("Frame",{
+        AnchorPoint=Vector2.new(.5,1),
+        Position=UDim2.new(.5,0,.5,0),
+        Size=UDim2.fromOffset(2.4,96),
+        Rotation=angle,
+        BackgroundColor3=Color3.new(1,1,1),
+        BorderSizePixel=0,
+        ZIndex=33
+    },wheel)
+    local gradient=new("UIGradient",{
+        Rotation=90,
+        Color=ColorSequence.new({
+            ColorSequenceKeypoint.new(0,Color3.fromHSV(hueValue,1,1)),
+            ColorSequenceKeypoint.new(1,Color3.new(1,1,1))
+        })
+    },slice)
 end
 
 wheelCenter=new("Frame",{
