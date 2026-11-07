@@ -1,7 +1,6 @@
 
 --========================================================
--- SYLLINSE V7 | GOLD EDITION
--- Premium dashboard / Animated interface
+-- SYLLINSE V8 | GOLD MOTION EDITION
 --========================================================
 
 local Players = game:GetService("Players")
@@ -13,15 +12,11 @@ local Stats = game:GetService("Stats")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
--- Cleanup
 local Old = PlayerGui:FindFirstChild("SYLLINSE")
 if Old then Old:Destroy() end
 
---========================================================
 -- CONFIG
---========================================================
-
-local VERSION = "V7 GOLD"
+local VERSION = "V8 GOLD MOTION"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -31,13 +26,12 @@ local MUTED = Color3.fromRGB(145, 143, 135)
 
 local ACCENT = GOLD
 local Open = true
+local Animating = false
 local CurrentTab = "Home"
-local Cards = {}
-local Tabs = {}
-local Pages = {}
 
-_G.SYLLINSE_LAUNCHES = (_G.SYLLINSE_LAUNCHES or 0) + 1
-local LocalLaunches = _G.SYLLINSE_LAUNCHES
+local Pages = {}
+local Tabs = {}
+local Cards = {}
 
 local function New(class, props, parent)
     local obj = Instance.new(class)
@@ -68,23 +62,24 @@ local function Corner(parent, radius)
     }, parent)
 end
 
-local function Stroke(parent, color)
-    return New("UIStroke", {
-        Color = color or ACCENT,
-        Transparency = 0.45,
-        Thickness = 1
-    }, parent)
-end
-
---========================================================
 -- GUI
---========================================================
-
 local GUI = New("ScreenGui", {
     Name = "SYLLINSE",
     ResetOnSpawn = false,
     DisplayOrder = 100
 }, PlayerGui)
+
+-- Background dimmer
+local Backdrop = New("TextButton", {
+    Name = "Backdrop",
+    Size = UDim2.fromScale(1, 1),
+    Position = UDim2.fromScale(0, 0),
+    BackgroundColor3 = Color3.new(0, 0, 0),
+    BackgroundTransparency = 1,
+    Text = "",
+    AutoButtonColor = false,
+    Visible = true
+}, GUI)
 
 local Main = New("CanvasGroup", {
     Name = "Window",
@@ -92,21 +87,19 @@ local Main = New("CanvasGroup", {
     Position = UDim2.new(0.5, -285, 0.5, -180),
     BackgroundColor3 = BG,
     BorderSizePixel = 0,
-    GroupTransparency = 0,
+    GroupTransparency = 1,
     ClipsDescendants = true
 }, GUI)
 
 Corner(Main, 12)
-Stroke(Main)
 
-local UIScale = New("UIScale", {
-    Scale = 1
+local MainStroke = New("UIStroke", {
+    Color = ACCENT,
+    Transparency = 0.35,
+    Thickness = 1
 }, Main)
 
---========================================================
 -- TOP BAR
---========================================================
-
 local Top = New("Frame", {
     Size = UDim2.new(1, 0, 0, 46),
     BackgroundColor3 = PANEL,
@@ -126,7 +119,7 @@ local Logo = New("TextLabel", {
 
 New("TextLabel", {
     Position = UDim2.fromOffset(170, 0),
-    Size = UDim2.fromOffset(120, 46),
+    Size = UDim2.fromOffset(140, 46),
     BackgroundTransparency = 1,
     Text = VERSION,
     TextColor3 = MUTED,
@@ -138,21 +131,17 @@ New("TextLabel", {
 local Close = New("TextButton", {
     AnchorPoint = Vector2.new(1, 0.5),
     Position = UDim2.new(1, -12, 0.5, 0),
-    Size = UDim2.fromOffset(27, 27),
+    Size = UDim2.fromOffset(28, 28),
     BackgroundColor3 = CARD,
     Text = "×",
     TextColor3 = WHITE,
     Font = Enum.Font.GothamBold,
-    TextSize = 18,
+    TextSize = 19,
     AutoButtonColor = false
 }, Top)
-
 Corner(Close, 7)
 
---========================================================
 -- SIDEBAR
---========================================================
-
 local Sidebar = New("Frame", {
     Position = UDim2.fromOffset(0, 46),
     Size = UDim2.new(0, 132, 1, -46),
@@ -182,10 +171,7 @@ New("UIListLayout", {
     SortOrder = Enum.SortOrder.LayoutOrder
 }, Nav)
 
---========================================================
 -- CONTENT
---========================================================
-
 local Content = New("Frame", {
     Position = UDim2.fromOffset(143, 57),
     Size = UDim2.new(1, -154, 1, -67),
@@ -202,22 +188,7 @@ local Heading = New("TextLabel", {
     TextXAlignment = Enum.TextXAlignment.Left
 }, Content)
 
-local Search = New("TextBox", {
-    AnchorPoint = Vector2.new(1, 0),
-    Position = UDim2.new(1, 0, 0, 2),
-    Size = UDim2.fromOffset(145, 26),
-    BackgroundColor3 = CARD,
-    Text = "",
-    PlaceholderText = "⌕  Search...",
-    PlaceholderColor3 = MUTED,
-    TextColor3 = WHITE,
-    Font = Enum.Font.Gotham,
-    TextSize = 10,
-    ClearTextOnFocus = false
-}, Content)
-
-Corner(Search, 6)
-
+-- PAGE CREATION
 local TabNames = {
     {"Home", "⌂"},
     {"Player", "◉"},
@@ -232,7 +203,7 @@ local function CreatePage(name)
         Position = UDim2.fromOffset(0, 39),
         Size = UDim2.new(1, 0, 1, -39),
         BackgroundTransparency = 1,
-        GroupTransparency = 0,
+        GroupTransparency = 1,
         Visible = false
     }, Content)
 
@@ -255,49 +226,92 @@ for _, tab in ipairs(TabNames) do
         BackgroundColor3 = PANEL,
         Text = "   " .. symbol .. "    " .. name,
         TextColor3 = MUTED,
-        Font = Enum.Font.GothamMedium,
+        Font = Enum.Font.GothamSemibold,
         TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left,
         AutoButtonColor = false
     }, Nav)
 
     Corner(button, 7)
-    Tabs[name] = button
+
+    local indicator = New("Frame", {
+        Size = UDim2.new(0, 3, 0, 0),
+        Position = UDim2.fromOffset(0, 17),
+        BackgroundColor3 = ACCENT,
+        BorderSizePixel = 0
+    }, button)
+    Corner(indicator, 5)
+
+    Tabs[name] = {
+        Button = button,
+        Indicator = indicator
+    }
+
     CreatePage(name)
+end
 
-    button.Activated:Connect(function()
-        Heading.Text = name
+-- PAGE SWITCHING
+local SwitchLock = false
 
-        for tabName, tabButton in pairs(Tabs) do
-            local selected = tabName == name
+local function SwitchTab(name)
+    if SwitchLock or not Pages[name] then return end
+    if CurrentTab == name then return end
 
-            Tween(tabButton, 0.2, {
-                BackgroundColor3 = selected and CARD or PANEL,
-                TextColor3 = selected and ACCENT or MUTED
-            })
-        end
+    SwitchLock = true
 
-        for pageName, page in pairs(Pages) do
-            if pageName == name then
-                page.Visible = true
-                page.GroupTransparency = 1
-                page.Position = UDim2.fromOffset(12, 39)
+    local oldPage = Pages[CurrentTab]
+    local newPage = Pages[name]
 
-                Tween(page, 0.28, {
-                    GroupTransparency = 0,
-                    Position = UDim2.fromOffset(0, 39)
-                })
-            else
-                page.Visible = false
-            end
-        end
+    CurrentTab = name
+    Heading.Text = name
+
+    -- Animate tab buttons
+    for tabName, data in pairs(Tabs) do
+        local selected = tabName == name
+
+        Tween(data.Button, 0.2, {
+            BackgroundColor3 = selected and CARD or PANEL,
+            TextColor3 = selected and ACCENT or MUTED
+        })
+
+        Tween(data.Indicator, 0.25, {
+            Size = UDim2.new(0, 3, 0, selected and 19 or 0),
+            Position = UDim2.fromOffset(0, selected and 8 or 17)
+        })
+    end
+
+    -- Fade old page out
+    if oldPage then
+        Tween(oldPage, 0.16, {
+            GroupTransparency = 1,
+            Position = UDim2.fromOffset(-8, 39)
+        })
+
+        task.wait(0.17)
+        oldPage.Visible = false
+    end
+
+    -- Fade new page in
+    newPage.Visible = true
+    newPage.GroupTransparency = 1
+    newPage.Position = UDim2.fromOffset(10, 39)
+
+    Tween(newPage, 0.28, {
+        GroupTransparency = 0,
+        Position = UDim2.fromOffset(0, 39)
+    })
+
+    task.wait(0.29)
+    SwitchLock = false
+end
+
+for name, data in pairs(Tabs) do
+    data.Button.Activated:Connect(function()
+        SwitchTab(name)
     end)
 end
 
---========================================================
 -- CARD SYSTEM
---========================================================
-
 local function CreateCard(parent, title, description)
     local card = New("Frame", {
         Name = title,
@@ -307,8 +321,11 @@ local function CreateCard(parent, title, description)
 
     Corner(card, 8)
 
-    local border = Stroke(card)
-    border.Transparency = 0.75
+    local stroke = New("UIStroke", {
+        Color = ACCENT,
+        Transparency = 0.75,
+        Thickness = 1
+    }, card)
 
     New("TextLabel", {
         Position = UDim2.fromOffset(10, 8),
@@ -321,7 +338,7 @@ local function CreateCard(parent, title, description)
         TextXAlignment = Enum.TextXAlignment.Left
     }, card)
 
-    local desc = New("TextLabel", {
+    New("TextLabel", {
         Position = UDim2.fromOffset(10, 29),
         Size = UDim2.new(1, -18, 0, 28),
         BackgroundTransparency = 1,
@@ -338,47 +355,112 @@ local function CreateCard(parent, title, description)
     return card
 end
 
+-- MOVABLE TOGGLE
 local function AddToggle(parent, title, description, callback)
     local card = CreateCard(parent, title, description)
 
     local switch = New("TextButton", {
         AnchorPoint = Vector2.new(1, 0.5),
         Position = UDim2.new(1, -10, 0.5, 0),
-        Size = UDim2.fromOffset(34, 18),
-        BackgroundColor3 = MUTED,
+        Size = UDim2.fromOffset(39, 21),
+        BackgroundColor3 = Color3.fromRGB(55, 55, 55),
         Text = "",
         AutoButtonColor = false
     }, card)
 
     Corner(switch, 20)
 
+    local outline = New("UIStroke", {
+        Color = MUTED,
+        Transparency = 0.65,
+        Thickness = 1
+    }, switch)
+
     local knob = New("Frame", {
         Position = UDim2.fromOffset(3, 3),
-        Size = UDim2.fromOffset(12, 12),
+        Size = UDim2.fromOffset(15, 15),
         BackgroundColor3 = WHITE,
         BorderSizePixel = 0
     }, switch)
 
     Corner(knob, 20)
 
-    local enabled = false
+    New("UIStroke", {
+        Color = Color3.fromRGB(255, 255, 255),
+        Transparency = 0.7,
+        Thickness = 1
+    }, knob)
 
-    switch.Activated:Connect(function()
-        enabled = not enabled
+    local enabled = false
+    local dragging = false
+    local dragInput
+
+    local function UpdateToggle(value)
+        enabled = value
 
         Tween(switch, 0.2, {
-            BackgroundColor3 = enabled and ACCENT or MUTED
+            BackgroundColor3 = enabled
+                and ACCENT
+                or Color3.fromRGB(55, 55, 55)
         })
 
         Tween(knob, 0.2, {
             Position = enabled
-                and UDim2.new(1, -15, 0, 3)
-                or UDim2.fromOffset(3, 3)
+                and UDim2.new(1, -18, 0, 3)
+                or UDim2.fromOffset(3, 3),
+            BackgroundColor3 = enabled and Color3.new(1,1,1) or WHITE
+        })
+
+        Tween(outline, 0.2, {
+            Color = enabled and ACCENT or MUTED,
+            Transparency = enabled and 0.15 or 0.65
         })
 
         if callback then
             local ok, err = pcall(callback, enabled)
-            if not ok then warn("SYLLINSE:", err) end
+            if not ok then warn("SYLLINSE toggle:", err) end
+        end
+    end
+
+    local function UpdateFromPosition(position)
+        local center = switch.AbsolutePosition.X
+            + switch.AbsoluteSize.X / 2
+
+        UpdateToggle(position.X >= center)
+    end
+
+    -- Clicking the track toggles it
+    switch.Activated:Connect(function()
+        if not dragging then
+            UpdateToggle(not enabled)
+        end
+    end)
+
+    -- Dragging the knob
+    knob.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragInput = input
+        end
+    end)
+
+    UIS.InputChanged:Connect(function(input)
+        if dragging then
+            if input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch then
+                UpdateFromPosition(input.Position)
+            end
+        end
+    end)
+
+    UIS.InputEnded:Connect(function(input)
+        if dragging then
+            if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+                dragInput = nil
+            end
         end
     end)
 
@@ -404,7 +486,7 @@ local function AddButton(parent, title, description, callback)
 
     button.Activated:Connect(function()
         Tween(button, 0.08, {
-            Size = UDim2.fromOffset(44, 21)
+            Size = UDim2.fromOffset(43, 21)
         })
 
         task.delay(0.09, function()
@@ -417,27 +499,24 @@ local function AddButton(parent, title, description, callback)
 
         if callback then
             local ok, err = pcall(callback)
-            if not ok then warn("SYLLINSE:", err) end
+            if not ok then warn("SYLLINSE button:", err) end
         end
     end)
 
     return card
 end
 
---========================================================
 -- HOME DASHBOARD
---========================================================
+local Home = Pages.Home
 
-local HomePage = Pages.Home
-
-local function AddStat(parent, title, initialValue)
-    local card = CreateCard(parent, title, initialValue)
+local function AddStat(parent, title, initial)
+    local card = CreateCard(parent, title, initial)
 
     local value = New("TextLabel", {
-        Position = UDim2.new(0, 10, 0, 31),
+        Position = UDim2.fromOffset(10, 31),
         Size = UDim2.new(1, -18, 0, 30),
         BackgroundTransparency = 1,
-        Text = initialValue,
+        Text = initial,
         TextColor3 = ACCENT,
         Font = Enum.Font.GothamBlack,
         TextSize = 19,
@@ -447,375 +526,260 @@ local function AddStat(parent, title, initialValue)
     return value
 end
 
-local FPSLabel = AddStat(HomePage, "FPS", "--")
-local PingLabel = AddStat(HomePage, "PING", "--")
-local SessionLabel = AddStat(HomePage, "SESSION TIME", "00:00")
-local LaunchLabel = AddStat(HomePage, "LOCAL LAUNCHES", tostring(LocalLaunches))
+_G.SYLLINSE_LAUNCHES = (_G.SYLLINSE_LAUNCHES or 0) + 1
 
-local GameCard = CreateCard(
-    HomePage,
-    "CURRENT GAME",
-    game.Name
+local FPSLabel = AddStat(Home, "FPS", "--")
+local PingLabel = AddStat(Home, "PING", "--")
+local SessionLabel = AddStat(Home, "SESSION TIME", "00:00")
+local LaunchLabel = AddStat(
+    Home,
+    "LOCAL LAUNCHES",
+    tostring(_G.SYLLINSE_LAUNCHES)
 )
 
-local VersionCard = CreateCard(
-    HomePage,
-    "SCRIPT VERSION",
-    VERSION .. "  |  SYLLINSE"
-)
+local GameCard = CreateCard(Home, "CURRENT GAME", game.Name)
+CreateCard(Home, "SCRIPT VERSION", VERSION)
+CreateCard(Home, "GLOBAL EXECUTIONS", "Statistics service not connected")
 
-local GlobalCard = CreateCard(
-    HomePage,
-    "GLOBAL EXECUTIONS",
-    "Statistics service not connected"
-)
+-- PLAYER PAGE
+AddToggle(Pages.Player, "Player Demo", "Example interface switch",
+    function(v) print("Player Demo:", v) end)
 
---========================================================
--- LIVE STATISTICS
---========================================================
+AddToggle(Pages.Player, "Movement Demo", "Example interface switch",
+    function(v) print("Movement Demo:", v) end)
 
+AddButton(Pages.Player, "Reset Demo", "Example button",
+    function() print("Reset demo") end)
+
+-- VISUALS PAGE
+AddToggle(Pages.Visuals, "Visual Demo", "Example visual switch",
+    function(v) print("Visual Demo:", v) end)
+
+AddToggle(Pages.Visuals, "Highlight Demo", "Example highlight switch",
+    function(v) print("Highlight Demo:", v) end)
+
+AddButton(Pages.Visuals, "Preview", "Test interface interaction",
+    function() print("Preview clicked") end)
+
+-- SETTINGS PAGE
+AddToggle(Pages.Settings, "Interface Effects", "Example setting",
+    function(v) print("Interface Effects:", v) end)
+
+AddButton(Pages.Settings, "Refresh Dashboard", "Refresh information",
+    function()
+        GameCard:FindFirstChildWhichIsA("TextLabel").Text = game.Name
+        LaunchLabel.Text = tostring(_G.SYLLINSE_LAUNCHES)
+    end)
+
+-- ABOUT PAGE
+AddButton(Pages.About, "SYLLINSE V8", "Gold Motion Edition",
+    function() print("SYLLINSE V8 GOLD MOTION") end)
+
+AddButton(Pages.About, "Developer", "SYLLINSE project",
+    function() print("SYLLINSE") end)
+
+-- LIVE STATS
 local StartTime = os.clock()
 local Frames = 0
-local LastFPSUpdate = os.clock()
+local LastUpdate = os.clock()
 
 RunService.RenderStepped:Connect(function()
-    Frames = Frames + 1
+    Frames += 1
 
     local now = os.clock()
 
-    if now - LastFPSUpdate >= 1 then
-        local fps = math.floor(
-            Frames / (now - LastFPSUpdate)
+    if now - LastUpdate >= 1 then
+        FPSLabel.Text = tostring(
+            math.floor(Frames / (now - LastUpdate))
         )
 
-        FPSLabel.Text = tostring(fps)
-
         Frames = 0
-        LastFPSUpdate = now
+        LastUpdate = now
 
-        local minutes = math.floor((now - StartTime) / 60)
-        local seconds = math.floor((now - StartTime) % 60)
-
+        local elapsed = math.floor(now - StartTime)
         SessionLabel.Text = string.format(
             "%02d:%02d",
-            minutes,
-            seconds
+            math.floor(elapsed / 60),
+            elapsed % 60
         )
 
         local ok, ping = pcall(function()
             return Stats.Network.ServerStatsItem["Data Ping"]:GetValueString()
         end)
 
-        if ok then
-            PingLabel.Text = tostring(ping)
-        else
-            PingLabel.Text = "N/A"
-        end
+        PingLabel.Text = ok and tostring(ping) or "N/A"
     end
 end)
 
---========================================================
--- PLAYER PAGE
---========================================================
-
-local PlayerPage = Pages.Player
-
-AddToggle(
-    PlayerPage,
-    "Player Demo",
-    "Example interface switch",
-    function(v)
-        print("Player Demo:", v)
-    end
-)
-
-AddToggle(
-    PlayerPage,
-    "Movement Demo",
-    "Interface-only demonstration",
-    function(v)
-        print("Movement Demo:", v)
-    end
-)
-
-AddButton(
-    PlayerPage,
-    "Reset Demo",
-    "Example reset button",
-    function()
-        print("Demo reset")
-    end
-)
-
---========================================================
--- VISUALS PAGE
---========================================================
-
-local VisualPage = Pages.Visuals
-
-AddToggle(
-    VisualPage,
-    "Visual Demo",
-    "Example visual switch",
-    function(v)
-        print("Visual Demo:", v)
-    end
-)
-
-AddToggle(
-    VisualPage,
-    "Highlight Demo",
-    "Example highlight switch",
-    function(v)
-        print("Highlight Demo:", v)
-    end
-)
-
-AddButton(
-    VisualPage,
-    "Preview",
-    "Test interface interaction",
-    function()
-        print("Preview clicked")
-    end
-)
-
---========================================================
--- SETTINGS PAGE
---========================================================
-
-local SettingsPage = Pages.Settings
-
-AddToggle(
-    SettingsPage,
-    "Interface Effects",
-    "Example interface setting",
-    function(v)
-        print("Interface effects:", v)
-    end
-)
-
-AddButton(
-    SettingsPage,
-    "Refresh Dashboard",
-    "Refresh displayed information",
-    function()
-        GameCard:FindFirstChildWhichIsA("TextLabel").Text = game.Name
-        LaunchLabel.Text = tostring(LocalLaunches)
-        print("Dashboard refreshed")
-    end
-)
-
---========================================================
--- ABOUT PAGE
---========================================================
-
-local AboutPage = Pages.About
-
-AddButton(
-    AboutPage,
-    "SYLLINSE V7",
-    "Gold Edition",
-    function()
-        print("SYLLINSE V7 GOLD")
-    end
-)
-
-AddButton(
-    AboutPage,
-    "Developer",
-    "SYLLINSE project",
-    function()
-        print("SYLLINSE")
-    end
-)
-
---========================================================
--- BOTTOM THEME PICKER
---========================================================
-
+-- SLIDING COLOUR BAR
 local ThemeButton = New("TextButton", {
     AnchorPoint = Vector2.new(0.5, 1),
-    Position = UDim2.new(0.5, 0, 1, -13),
+    Position = UDim2.new(0.5, 0, 1, -12),
     Size = UDim2.new(1, -16, 0, 32),
     BackgroundColor3 = CARD,
-    Text = "  ◉  THEME",
+    Text = "  ◉  CUSTOM THEME",
     TextColor3 = ACCENT,
     Font = Enum.Font.GothamBold,
-    TextSize = 10,
+    TextSize = 9,
     AutoButtonColor = false
 }, Sidebar)
 
 Corner(ThemeButton, 7)
-Stroke(ThemeButton)
 
 local ThemePopup = New("Frame", {
-    Position = UDim2.new(0, 8, 1, -151),
-    Size = UDim2.new(1, -16, 0, 130),
+    Position = UDim2.new(0, 8, 1, -105),
+    Size = UDim2.new(1, -16, 0, 85),
     BackgroundColor3 = CARD,
     Visible = false,
     ZIndex = 20
 }, Sidebar)
 
 Corner(ThemePopup, 8)
-Stroke(ThemePopup)
 
-New("UIListLayout", {
-    Padding = UDim.new(0, 4),
-    SortOrder = Enum.SortOrder.LayoutOrder
+New("UIStroke", {
+    Color = ACCENT,
+    Transparency = 0.3
 }, ThemePopup)
 
-local Themes = {
-    {"GOLD", Color3.fromRGB(212, 175, 55)},
-    {"BLUE", Color3.fromRGB(75, 155, 255)},
-    {"PURPLE", Color3.fromRGB(170, 105, 255)},
-    {"RED", Color3.fromRGB(255, 85, 95)},
-    {"GREEN", Color3.fromRGB(90, 205, 125)}
-}
+New("TextLabel", {
+    Position = UDim2.fromOffset(8, 5),
+    Size = UDim2.new(1, -16, 0, 18),
+    BackgroundTransparency = 1,
+    Text = "DRAG TO CHANGE COLOUR",
+    TextColor3 = WHITE,
+    Font = Enum.Font.GothamBold,
+    TextSize = 8,
+    ZIndex = 21
+}, ThemePopup)
 
-local function SetAccent(color, name)
+local HueBar = New("Frame", {
+    Position = UDim2.fromOffset(9, 36),
+    Size = UDim2.new(1, -18, 0, 18),
+    BackgroundColor3 = WHITE,
+    BorderSizePixel = 0,
+    ZIndex = 21
+}, ThemePopup)
+
+Corner(HueBar, 8)
+
+New("UIGradient", {
+    Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255,0,0)),
+        ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255,255,0)),
+        ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0,255,0)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0,255,255)),
+        ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0,0,255)),
+        ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255,0,255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255,0,0))
+    })
+}, HueBar)
+
+local HueKnob = New("Frame", {
+    Position = UDim2.new(0, -3, 0.5, -5),
+    Size = UDim2.fromOffset(10, 28),
+    BackgroundColor3 = WHITE,
+    BorderSizePixel = 0,
+    ZIndex = 23
+}, HueBar)
+
+Corner(HueKnob, 6)
+
+New("UIStroke", {
+    Color = Color3.new(0,0,0),
+    Thickness = 1
+}, HueKnob)
+
+local Hue = 0.12
+local Saturation = 0.72
+local Value = 0.83
+
+local function ApplyAccent(color)
     ACCENT = color
 
-    Logo.TextColor3 = color
-    ThemeButton.TextColor3 = color
-    ThemeButton.BackgroundColor3 = CARD
+    Tween(Logo, 0.15, {TextColor3 = color})
+    Tween(ThemeButton, 0.15, {TextColor3 = color})
+    Tween(MainStroke, 0.15, {Color = color})
 
-    for _, object in ipairs(GUI:GetDescendants()) do
-        if object:IsA("UIStroke") then
-            object.Color = color
-        elseif object:IsA("TextButton") then
-            if object.Text == "RUN" then
-                object.BackgroundColor3 = color
-            end
+    for _, data in pairs(Tabs) do
+        local selected = data.Button.Text:find(CurrentTab, 1, true)
+
+        Tween(data.Indicator, 0.15, {
+            BackgroundColor3 = color
+        })
+
+        if selected then
+            Tween(data.Button, 0.15, {
+                TextColor3 = color
+            })
         end
     end
 
-    for _, tab in pairs(Tabs) do
-        if tab.Text:find(CurrentTab, 1, true) then
-            tab.TextColor3 = color
+    for _, obj in ipairs(GUI:GetDescendants()) do
+        if obj:IsA("UIStroke") then
+            obj.Color = color
+        elseif obj:IsA("TextLabel") and obj.TextColor3 == GOLD then
+            obj.TextColor3 = color
+        elseif obj:IsA("TextButton") and obj.Text == "RUN" then
+            obj.BackgroundColor3 = color
         end
     end
 
-    for _, item in ipairs({FPSLabel, PingLabel, SessionLabel, LaunchLabel}) do
-        item.TextColor3 = color
-    end
-
-    print("Theme changed:", name)
+    FPSLabel.TextColor3 = color
+    PingLabel.TextColor3 = color
+    SessionLabel.TextColor3 = color
+    LaunchLabel.TextColor3 = color
 end
 
-for _, theme in ipairs(Themes) do
-    local name, color = theme[1], theme[2]
+local function SetHueFromPosition(x)
+    local relative = math.clamp(
+        (x - HueBar.AbsolutePosition.X) / HueBar.AbsoluteSize.X,
+        0,
+        1
+    )
 
-    local button = New("TextButton", {
-        Size = UDim2.new(1, 0, 0, 22),
-        BackgroundColor3 = PANEL,
-        Text = name,
-        TextColor3 = color,
-        Font = Enum.Font.GothamBold,
-        TextSize = 9,
-        ZIndex = 21,
-        AutoButtonColor = false
-    }, ThemePopup)
+    Hue = relative
 
-    button.Activated:Connect(function()
-        SetAccent(color, name)
-        ThemePopup.Visible = false
-    end)
+    local color = Color3.fromHSV(Hue, Saturation, Value)
+
+    Tween(HueKnob, 0.08, {
+        Position = UDim2.new(relative, -5, 0.5, -5)
+    })
+
+    ApplyAccent(color)
 end
 
-ThemeButton.Activated:Connect(function()
-    ThemePopup.Visible = not ThemePopup.Visible
-end)
+local SliderDragging = false
 
---========================================================
--- SEARCH
---========================================================
-
-Search:GetPropertyChangedSignal("Text"):Connect(function()
-    local query = Search.Text:lower()
-
-    for _, card in ipairs(Cards) do
-        card.Visible = query == ""
-            or card.Name:lower():find(query, 1, true) ~= nil
-    end
-end)
-
---========================================================
--- FLOATING BUTTON
---========================================================
-
-local Floating = New("TextButton", {
-    AnchorPoint = Vector2.new(1, 0.5),
-    Position = UDim2.new(1, -12, 0.5, 0),
-    Size = UDim2.fromOffset(44, 44),
-    BackgroundColor3 = ACCENT,
-    Text = "S",
-    TextColor3 = BG,
-    Font = Enum.Font.GothamBlack,
-    TextSize = 20,
-    AutoButtonColor = false
-}, GUI)
-
-Corner(Floating, 22)
-
---========================================================
--- OPEN / CLOSE ANIMATION
---========================================================
-
-local Animating = false
-
-local function SetOpen(state)
-    if Animating or Open == state then return end
-
-    Open = state
-    Animating = true
-
-    if state then
-        Main.Visible = true
-        Main.GroupTransparency = 1
-        Main.Size = UDim2.fromOffset(535, 335)
-
-        local tween = Tween(Main, 1.2, {
-            GroupTransparency = 0,
-            Size = UDim2.fromOffset(570, 360)
-        })
-
-        tween.Completed:Once(function()
-            Animating = false
-        end)
-    else
-        local tween = Tween(Main, 1.2, {
-            GroupTransparency = 1,
-            Size = UDim2.fromOffset(535, 335)
-        })
-
-        tween.Completed:Once(function()
-            Main.Visible = false
-            Animating = false
-            Main.Size = UDim2.fromOffset(570, 360)
-        end)
-    end
-end
-
-Floating.Activated:Connect(function()
-    SetOpen(not Open)
-end)
-
-Close.Activated:Connect(function()
-    SetOpen(false)
-end)
-
---========================================================
--- DRAGGING
---========================================================
-
-local dragging = false
-local dragStart
-local startPosition
-
-Top.InputBegan:Connect(function(input)
+HueBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
     or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPosition = Main.Positio
+        SliderDragging = true
+        SetHueFromPosition(input.Position.X)
+    end
+end)
+
+HueKnob.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        SliderDragging = true
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if SliderDragging then
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+            SetHueFromPosition(input.Position.X)
+        end
+    end
+end)
+
+UIS.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        SliderDragging = false
+    end
+end)
+
+ThemeButton.Activated:Connect(function()
+    
