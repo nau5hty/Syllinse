@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V9.4 HOLD DOCK + TOGGLE FIX"
+local VERSION = "V9.5 FLOATING TOGGLE REPAIR"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -727,6 +727,20 @@ UIS.InputEnded:Connect(function(input)
     end
     swipeStart=nil
 end)
+
+-- Floating S toggle. Keep this instance in scope for the gesture handlers below.
+local floating=new("TextButton",{
+    Name="FloatingToggle",
+    AnchorPoint=Vector2.new(1,.5),
+    Position=UDim2.new(1,-12,.5,0),
+    Size=UDim2.fromOffset(44,44),
+    BackgroundColor3=ACCENT,
+    Text="S",TextColor3=BG,
+    Font=Enum.Font.GothamBlack,TextSize=20,
+    AutoButtonColor=false,Active=true,Interactable=true,
+    Selectable=true,Visible=true,ZIndex=200
+},gui)
+corner(floating,22)
 
 -- Vertical floating dock: slides out from behind the S toggle like an eraser sleeve.
 local dock=new("Frame",{
