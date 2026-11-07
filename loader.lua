@@ -728,21 +728,21 @@ UIS.InputEnded:Connect(function(input)
     swipeStart=nil
 end)
 
--- Premium floating navigation dock, revealed by holding the floating toggle.
-local dock = new("Frame", {
+-- Vertical floating dock: slides out from behind the S toggle like an eraser sleeve.
+local dock=new("Frame",{
     Name="FloatingNavigationDock",
-    AnchorPoint=Vector2.new(.5,1),
-    Position=UDim2.new(.5,0,1,-28),
-    Size=UDim2.fromOffset(310,66),
+    AnchorPoint=Vector2.new(1,.5),
+    Position=UDim2.fromOffset(0,0),
+    Size=UDim2.fromOffset(74,252),
     BackgroundTransparency=1,
     Visible=false,
     ZIndex=70
 },gui)
-
-local dockScale=new("UIScale",{Scale=.88},dock)
+local dockScale=new("UIScale",{Scale=1},dock)
 local dockBase=new("Frame",{
-    Name="DockBase",Position=UDim2.fromOffset(0,3),
-    Size=UDim2.fromOffset(236,60),
+    Name="DockBase",
+    Position=UDim2.fromOffset(0,4),
+    Size=UDim2.fromOffset(66,244),
     BackgroundColor3=Color3.fromRGB(19,19,20),
     BorderSizePixel=0,ZIndex=70
 },dock)
@@ -755,48 +755,52 @@ for index,info in ipairs(dockTabs) do
     local tabName,glyph=info[1],info[2]
     local button=new("TextButton",{
         Name="Dock"..tabName,
-        Position=UDim2.fromOffset(8+(index-1)*74,4),
-        Size=UDim2.fromOffset(70,50),
+        Position=UDim2.fromOffset(4,5+(index-1)*58),
+        Size=UDim2.fromOffset(58,54),
         BackgroundTransparency=1,
         Text=glyph,TextColor3=Color3.fromRGB(205,205,205),
-        Font=Enum.Font.Gotham,TextSize=31,
+        Font=Enum.Font.Gotham,TextSize=29,
         AutoButtonColor=false,ZIndex=72
     },dockBase)
     if index<3 then
         new("Frame",{
-            Position=UDim2.new(1,-2,0,10),Size=UDim2.fromOffset(1,31),
+            Position=UDim2.new(0,13,1,-1),Size=UDim2.fromOffset(32,1),
             BackgroundColor3=Color3.fromRGB(5,5,6),
             BorderSizePixel=0,ZIndex=73
         },button)
     end
     local underline=new("Frame",{
-        Name="GoldIndicator",AnchorPoint=Vector2.new(.5,1),
-        Position=UDim2.new(.5,0,1,-1),Size=UDim2.fromOffset(0,3),
+        Name="GoldIndicator",AnchorPoint=Vector2.new(0, .5),
+        Position=UDim2.new(0,2,.5,0),Size=UDim2.fromOffset(3,0),
         BackgroundColor3=GOLD,BorderSizePixel=0,ZIndex=73
     },button)
     corner(underline,3)
     dockButtons[tabName]={button=button,indicator=underline}
     button.Activated:Connect(function()
+        if not main.Visible then showWindow() end
         switchTab(tabName)
     end)
 end
 
 local menuButton=new("TextButton",{
-    Name="DockMenuButton",Position=UDim2.fromOffset(244,0),
-    Size=UDim2.fromOffset(66,66),BackgroundColor3=Color3.fromRGB(22,20,16),
-    BorderSizePixel=0,Text="═",TextColor3=WHITE,
-    Font=Enum.Font.Gotham,TextSize=32,AutoButtonColor=false,ZIndex=72
-},dock)
-corner(menuButton,21)
-local menuGlow=new("UIStroke",{Color=GOLD,Thickness=3,Transparency=.08},menuButton)
-new("UIStroke",{Color=Color3.fromRGB(255,229,165),Thickness=1,Transparency=.48},menuButton)
+    Name="DockMenuButton",Position=UDim2.fromOffset(4,187),
+    Size=UDim2.fromOffset(58,50),BackgroundColor3=Color3.fromRGB(22,20,16),
+    BorderSizePixel=0,Text="☰",TextColor3=WHITE,
+    Font=Enum.Font.Gotham,TextSize=25,AutoButtonColor=false,ZIndex=72
+},dockBase)
+corner(menuButton,18)
+local menuGlow=new("UIStroke",{Color=GOLD,Thickness=2.5,Transparency=.08},menuButton)
 local sidebarExpanded=true
 menuButton.Activated:Connect(function()
+    if not main.Visible then
+        showWindow()
+        return
+    end
     sidebarExpanded=not sidebarExpanded
     if sidebarExpanded then
         sidebar.Visible=true
         tween(content,.28,{Position=UDim2.fromOffset(143,57),Size=UDim2.new(1,-154,1,-67)},Enum.EasingStyle.Quart)
-        tween(menuGlow,.25,{Transparency=.08,Thickness=3})
+        tween(menuGlow,.25,{Transparency=.08,Thickness=2.5})
     else
         tween(content,.28,{Position=UDim2.fromOffset(16,57),Size=UDim2.new(1,-32,1,-67)},Enum.EasingStyle.Quart)
         tween(menuGlow,.25,{Transparency=.42,Thickness=1.5})
@@ -810,7 +814,7 @@ local function updateDockSelection(activeName)
     for name,data in pairs(dockButtons) do
         local active=name==activeName
         tween(data.button,.2,{TextColor3=active and WHITE or Color3.fromRGB(155,155,155)})
-        tween(data.indicator,.22,{Size=UDim2.fromOffset(active and 38 or 0,3)})
+        tween(data.indicator,.22,{Size=UDim2.fromOffset(3,active and 28 or 0)})
     end
 end
 local previousSwitchTab=switchTab
@@ -819,40 +823,11 @@ switchTab=function(name,direction)
     updateDockSelection(name)
 end
 
--- Floating reopen button
-local floating=new("TextButton",{
-    Name="FloatingToggle",
-    AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,-12,.5,0),
-    Size=UDim2.fromOffset(44,44),BackgroundColor3=ACCENT,
-    Text="S",TextColor3=BG,Font=Enum.Font.GothamBlack,
-    TextSize=20,AutoButtonColor=false,Active=true,Interactable=true,Selectable=true,Visible=true,ZIndex=200
-},gui)
-corner(floating,22)
-
-
--- Window dragging
-local dragging, dragStart, startPos=false,nil,nil
-top.InputBegan:Connect(function(input)
-    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
-        dragging=true
-        dragStart=input.Position
-        startPos=main.Position
-    end
-end)
-UIS.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseMovement) then
-        local delta=input.Position-dragStart
-        main.Position=UDim2.new(startPos.X.Scale,startPos.X.Offset+delta.X,startPos.Y.Scale,startPos.Y.Offset+delta.Y)
-    end
-end)
-UIS.InputEnded:Connect(function(input)
-    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then dragging=false end
-end)
-
 -- Reliable hide/reopen controls.
 -- The X hides the dashboard; the floating S restores it.
 local mainFadeTargets=collectFadeTargets(main)
 local animating=false
+local showWindow
 local function hideWindow()
     if animating or (not main.Visible and not picker.Visible) then return end
     animating=true
@@ -871,7 +846,7 @@ local function hideWindow()
         animating=false
     end)
 end
-local function showWindow()
+showWindow=function()
     if animating or main.Visible or picker.Visible then return end
     animating=true
     main.Visible=true
@@ -898,11 +873,16 @@ local holdToken=0
 local HOLD_TIME=.48
 
 local function revealDock()
-    if not main.Visible or animating then return end
+    if animating then return end
+    local togglePos=floating.AbsolutePosition
+    local toggleSize=floating.AbsoluteSize
+    local endX=togglePos.X-10
+    local centerY=togglePos.Y+toggleSize.Y/2
+    dock.AnchorPoint=Vector2.new(1,.5)
+    dock.Position=UDim2.fromOffset(endX+58,centerY)
     dock.Visible=true
-    dockScale.Scale=.88
-    dock.BackgroundTransparency=1
-    tween(dockScale,.22,{Scale=1},Enum.EasingStyle.Back)
+    dockScale.Scale=1
+    tween(dock,.42,{Position=UDim2.fromOffset(endX,centerY)},Enum.EasingStyle.Quart)
 end
 
 floating.InputBegan:Connect(function(input)
@@ -965,12 +945,6 @@ UIS.InputEnded:Connect(function(input)
         end
     end
 end)
-
--- The dock stays above the game but never covers the window close control.
-dock:GetPropertyChangedSignal("Visible"):Connect(function()
-    if dock.Visible and not main.Visible then dock.Visible=false end
-end)
-
 
 -- Responsive sizing
 local function updateScale()
