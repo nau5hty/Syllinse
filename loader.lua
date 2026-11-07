@@ -1,5 +1,5 @@
 --========================================================
--- SYLLINSE V10.0 | NOIR REFINED REDESIGN
+-- SYLLINSE V10.1 | OURO-INSPIRED VISUAL REDESIGN
 -- UI-only dashboard build
 --========================================================
 
@@ -15,13 +15,13 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V10.0  |  NOIR REFINED"
-local BG = Color3.fromRGB(7, 8, 10)
-local PANEL = Color3.fromRGB(13, 15, 18)
-local CARD = Color3.fromRGB(21, 22, 25)
-local GOLD = Color3.fromRGB(232, 190, 86)
-local WHITE = Color3.fromRGB(245, 242, 232)
-local MUTED = Color3.fromRGB(145, 143, 135)
+local VERSION = "V10.1  |  OURO INSPIRED"
+local BG = Color3.fromRGB(10, 7, 12)
+local PANEL = Color3.fromRGB(22, 12, 20)
+local CARD = Color3.fromRGB(34, 18, 31)
+local GOLD = Color3.fromRGB(235, 91, 170)
+local WHITE = Color3.fromRGB(250, 239, 247)
+local MUTED = Color3.fromRGB(169, 143, 160)
 local ACCENT = GOLD
 
 local function new(className, props, parent)
@@ -125,7 +125,7 @@ local top = new("Frame", {
     BorderSizePixel=0, Active=true, ZIndex=3
 }, main)
 corner(top, 16)
-new("UIGradient",{Rotation=0,Color=ColorSequence.new(Color3.fromRGB(22,23,26),Color3.fromRGB(11,12,14))},top)
+new("UIGradient",{Rotation=0,Color=ColorSequence.new(Color3.fromRGB(48,22,42),Color3.fromRGB(17,10,18))},top)
 new("Frame",{
     Name="HeaderGoldRule",Position=UDim2.new(0,18,1,-2),
     Size=UDim2.new(1,-36,0,1),BackgroundColor3=GOLD,
@@ -246,7 +246,7 @@ local function createCard(parent, title, description)
     }, parent)
     corner(card, 12)
     new("UIStroke", {Color=ACCENT, Transparency=0.72, Thickness=1}, card)
-    new("UIGradient",{Rotation=90,Color=ColorSequence.new(Color3.fromRGB(27,28,31),Color3.fromRGB(17,18,20))},card)
+    new("UIGradient",{Rotation=90,Color=ColorSequence.new(Color3.fromRGB(49,25,43),Color3.fromRGB(25,13,24))},card)
     new("TextLabel", {
         Position=UDim2.fromOffset(10,8), Size=UDim2.new(1,-18,0,18),
         BackgroundTransparency=1, Text=title, TextColor3=WHITE,
@@ -379,7 +379,7 @@ addButton(pages.Settings,"Refresh","Refresh dashboard values",function()
     local label=gameCard:FindFirstChildWhichIsA("TextLabel")
     if label then label.Text=game.Name end
 end)
-addButton(pages.About,"SYLLINSE V10.0","Noir Refined Edition",function() print(VERSION) end)
+addButton(pages.About,"SYLLINSE V10.1","Ouro-Inspired Edition",function() print(VERSION) end)
 addButton(pages.About,"Developer","SYLLINSE project",function() print("SYLLINSE") end)
 
 -- Live stats
@@ -782,7 +782,7 @@ local dockBase=new("Frame",{
     Name="DockBase",
     Position=UDim2.fromOffset(0,0),
     Size=UDim2.fromOffset(44,176),
-    BackgroundColor3=Color3.fromRGB(19,19,20),
+    BackgroundColor3=Color3.fromRGB(30,14,27),
     BorderSizePixel=0,ZIndex=202
 },dock)
 corner(dockBase,30)
@@ -827,7 +827,7 @@ end
 
 local menuButton=new("TextButton",{
     Name="DockMenuButton",Position=UDim2.fromOffset(0,132),
-    Size=UDim2.fromOffset(44,44),BackgroundColor3=Color3.fromRGB(22,20,16),
+    Size=UDim2.fromOffset(44,44),BackgroundColor3=Color3.fromRGB(43,18,36),
     BorderSizePixel=0,Text="☰",TextColor3=WHITE,
     Font=Enum.Font.Gotham,TextSize=25,AutoButtonColor=false,ZIndex=72
 },dockBase)
