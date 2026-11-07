@@ -710,47 +710,6 @@ local floating=new("TextButton",{
 },gui)
 corner(floating,22)
 
--- Drag the floating toggle anywhere on screen. A short tap still toggles it.
-local floatingPress, floatingStart, floatingOrigin
-local floatingMoved=false
-local floatingDragging=false
-floating.InputBegan:Connect(function(input)
-    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
-        floatingPress=input
-        floatingStart=Vector2.new(input.Position.X,input.Position.Y)
-        floatingOrigin=floating.Position
-        floatingMoved=false
-        floatingDragging=true
-    end
-end)
-UIS.InputChanged:Connect(function(input)
-    if not floatingDragging or not floatingPress then return end
-    local isMove=(input.UserInputType==Enum.UserInputType.Touch and input==floatingPress)
-        or input.UserInputType==Enum.UserInputType.MouseMovement
-    if not isMove then return end
-    local point=Vector2.new(input.Position.X,input.Position.Y)
-    local delta=point-floatingStart
-    if delta.Magnitude>7 then floatingMoved=true end
-    if floatingMoved then
-        floating.Position=UDim2.new(
-            floatingOrigin.X.Scale,floatingOrigin.X.Offset+delta.X,
-            floatingOrigin.Y.Scale,floatingOrigin.Y.Offset+delta.Y
-        )
-    end
-end)
-UIS.InputEnded:Connect(function(input)
-    if not floatingDragging or not floatingPress then return end
-    local ended=(input==floatingPress)
-        or (floatingPress.UserInputType==Enum.UserInputType.MouseButton1 and input.UserInputType==Enum.UserInputType.MouseButton1)
-    if ended then
-        local wasMoved=floatingMoved
-        floatingDragging=false
-        floatingPress=nil
-        if not wasMoved then
-            if main.Visible or picker.Visible then hideWindow() else showWindow() end
-        end
-    end
-end)
 
 -- Window dragging
 local dragging, dragStart, startPos=false,nil,nil
@@ -799,6 +758,48 @@ local function showWindow()
     task.delay(.24,function() animating=false end)
 end
 close.Activated:Connect(hideWindow)
+-- Drag the floating toggle anywhere on screen. A short tap still toggles it.
+local floatingPress, floatingStart, floatingOrigin
+local floatingMoved=false
+local floatingDragging=false
+floating.InputBegan:Connect(function(input)
+    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
+        floatingPress=input
+        floatingStart=Vector2.new(input.Position.X,input.Position.Y)
+        floatingOrigin=floating.Position
+        floatingMoved=false
+        floatingDragging=true
+    end
+end)
+UIS.InputChanged:Connect(function(input)
+    if not floatingDragging or not floatingPress then return end
+    local isMove=(input.UserInputType==Enum.UserInputType.Touch and input==floatingPress)
+        or input.UserInputType==Enum.UserInputType.MouseMovement
+    if not isMove then return end
+    local point=Vector2.new(input.Position.X,input.Position.Y)
+    local delta=point-floatingStart
+    if delta.Magnitude>7 then floatingMoved=true end
+    if floatingMoved then
+        floating.Position=UDim2.new(
+            floatingOrigin.X.Scale,floatingOrigin.X.Offset+delta.X,
+            floatingOrigin.Y.Scale,floatingOrigin.Y.Offset+delta.Y
+        )
+    end
+end)
+UIS.InputEnded:Connect(function(input)
+    if not floatingDragging or not floatingPress then return end
+    local ended=(input==floatingPress)
+        or (floatingPress.UserInputType==Enum.UserInputType.MouseButton1 and input.UserInputType==Enum.UserInputType.MouseButton1)
+    if ended then
+        local wasMoved=floatingMoved
+        floatingDragging=false
+        floatingPress=nil
+        if not wasMoved then
+            if main.Visible or picker.Visible then hideWindow() else showWindow() end
+        end
+    end
+end)
+
 
 -- Responsive sizing
 local scale=new("UIScale",{Scale=1},main)
