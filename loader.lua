@@ -113,11 +113,13 @@ local main = new("Frame", {
     Visible = true
 }, gui)
 corner(main, 12)
+-- Declare scale before hide/show callbacks so they capture this local instance.
+local scale=new("UIScale",{Scale=1},main)
 local mainStroke = new("UIStroke", {Color=ACCENT, Transparency=0.3, Thickness=1}, main)
 
 local top = new("Frame", {
     Size=UDim2.new(1,0,0,46), BackgroundColor3=PANEL,
-    BorderSizePixel=0, ZIndex=3
+    BorderSizePixel=0, Active=true, ZIndex=3
 }, main)
 corner(top, 10)
 
@@ -823,7 +825,7 @@ local floating=new("TextButton",{
     AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,-12,.5,0),
     Size=UDim2.fromOffset(44,44),BackgroundColor3=ACCENT,
     Text="S",TextColor3=BG,Font=Enum.Font.GothamBlack,
-    TextSize=20,AutoButtonColor=false,Active=true,Interactable=true,ZIndex=60
+    TextSize=20,AutoButtonColor=false,Active=true,Interactable=true,Selectable=true,Visible=true,ZIndex=200
 },gui)
 corner(floating,22)
 
@@ -882,6 +884,7 @@ local function showWindow()
     setFade(mainFadeTargets,0,1.2)
     task.delay(1.22,function() animating=false end)
 end
+close.Active=true
 close.Activated:Connect(function()
     dock.Visible=false
     hideWindow()
@@ -970,7 +973,6 @@ end)
 
 
 -- Responsive sizing
-local scale=new("UIScale",{Scale=1},main)
 local function updateScale()
     local camera=workspace.CurrentCamera
     if not camera then return end
