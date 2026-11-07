@@ -15,7 +15,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local old = playerGui:FindFirstChild("SYLLINSE")
 if old then old:Destroy() end
 
-local VERSION = "V8.1 GOLD MOTION"
+local VERSION = "V8.2 SLIDE + COLOUR WHEEL"
 local BG = Color3.fromRGB(8, 8, 9)
 local PANEL = Color3.fromRGB(16, 16, 17)
 local CARD = Color3.fromRGB(24, 23, 20)
@@ -89,15 +89,16 @@ local gui = new("ScreenGui", {
     ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 }, playerGui)
 
-local backdrop = new("TextButton", {
+-- Passive backdrop: dims the game but never captures joystick or jump touches.
+local backdrop = new("Frame", {
     Name = "Dimmer",
     Size = UDim2.fromScale(1, 1),
     Position = UDim2.fromScale(0, 0),
     BackgroundColor3 = Color3.new(0, 0, 0),
     BackgroundTransparency = 1,
-    Text = "",
-    AutoButtonColor = false,
     BorderSizePixel = 0,
+    Active = false,
+    Selectable = false,
     ZIndex = 1,
     Visible = true
 }, gui)
@@ -162,7 +163,7 @@ new("UIListLayout", {Padding=UDim.new(0,6), SortOrder=Enum.SortOrder.LayoutOrder
 
 local content = new("Frame", {
     Position=UDim2.fromOffset(143,57), Size=UDim2.new(1,-154,1,-67),
-    BackgroundTransparency=1, ZIndex=3
+    BackgroundTransparency=1, ClipsDescendants=true, ZIndex=3
 }, main)
 
 local heading = new("TextLabel", {
@@ -178,7 +179,7 @@ local function createPage(name)
     local page = new("Frame", {
         Name=name, Position=UDim2.fromOffset(0,39),
         Size=UDim2.new(1,0,1,-39), BackgroundTransparency=1,
-        Visible=false, ZIndex=4
+        ClipsDescendants=true, Visible=false, ZIndex=4
     }, content)
     new("UIGridLayout", {
         CellSize=UDim2.new(0.5,-6,0,75),
@@ -362,59 +363,89 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Bottom hue slider
+-- Animated modal colour wheel. Dashboard is hidden while choosing a colour.
 local themeButton = new("TextButton", {
     AnchorPoint=Vector2.new(0.5,1), Position=UDim2.new(0.5,0,1,-12),
     Size=UDim2.new(1,-16,0,32), BackgroundColor3=CARD,
-    Text="  ◉  CUSTOM COLOUR", TextColor3=ACCENT,
+    Text="  ◉  CHANGE THEME", TextColor3=ACCENT,
     Font=Enum.Font.GothamBold, TextSize=9, AutoButtonColor=false, ZIndex=7
 },sidebar)
 corner(themeButton,7)
 
-local popup = new("Frame", {
-    Position=UDim2.new(0,8,1,-105), Size=UDim2.new(1,-16,0,85),
-    BackgroundColor3=CARD, Visible=false, ZIndex=10
-},sidebar)
-corner(popup,8)
-new("UIStroke",{Color=ACCENT,Transparency=0.3},popup)
+local pickerShade = new("Frame", {
+    Name="ThemePickerShade", Size=UDim2.fromScale(1,1),
+    BackgroundColor3=Color3.new(0,0,0), BackgroundTransparency=1,
+    BorderSizePixel=0, Visible=false, Active=false, ZIndex=30
+},gui)
+local picker = new("Frame", {
+    Name="ThemePicker", AnchorPoint=Vector2.new(.5,.5),
+    Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(280,300),
+    BackgroundColor3=PANEL, BorderSizePixel=0, Visible=false, ZIndex=31
+},gui)
+corner(picker,14)
+local pickerStroke=new("UIStroke",{Color=ACCENT,Transparency=.25,Thickness=1},picker)
 new("TextLabel",{
-    Position=UDim2.fromOffset(8,5),Size=UDim2.new(1,-16,0,18),
-    BackgroundTransparency=1,Text="DRAG TO CHANGE COLOUR",
-    TextColor3=WHITE,Font=Enum.Font.GothamBold,TextSize=8,ZIndex=11
-},popup)
+    Position=UDim2.fromOffset(18,13),Size=UDim2.new(1,-65,0,25),
+    BackgroundTransparency=1,Text="CHOOSE YOUR COLOUR",
+    TextColor3=WHITE,Font=Enum.Font.GothamBlack,TextSize=13,
+    TextXAlignment=Enum.TextXAlignment.Left,ZIndex=32
+},picker)
+local pickerClose=new("TextButton",{
+    AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-12,0,10),
+    Size=UDim2.fromOffset(30,30),BackgroundColor3=CARD,
+    Text="×",TextColor3=WHITE,Font=Enum.Font.GothamBold,
+    TextSize=20,AutoButtonColor=false,ZIndex=33
+},picker)
+corner(pickerClose,8)
+local wheel=new("Frame",{
+    AnchorPoint=Vector2.new(.5,.5),Position=UDim2.new(.5,0,0,155),
+    Size=UDim2.fromOffset(190,190),BackgroundColor3=CARD,
+    BorderSizePixel=0,ZIndex=32
+},picker)
+corner(wheel,100)
+new("UIStroke",{Color=Color3.fromRGB(75,75,75),Transparency=.25,Thickness=1},wheel)
+for i=0,71 do
+    local angle=(i/72)*math.pi*2-math.pi/2
+    local dot=new("Frame",{
+        AnchorPoint=Vector2.new(.5,.5),
+        Position=UDim2.new(.5,math.cos(angle)*79,.5,math.sin(angle)*79),
+        Size=UDim2.fromOffset(13,13),
+        BackgroundColor3=Color3.fromHSV(i/72,.82,.95),
+        BorderSizePixel=0,ZIndex=34
+    },wheel)
+    corner(dot,10)
+end
+local wheelCenter=new("Frame",{
+    AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
+    Size=UDim2.fromOffset(108,108),BackgroundColor3=ACCENT,
+    BorderSizePixel=0,ZIndex=35
+},wheel)
+corner(wheelCenter,60)
+new("UIStroke",{Color=WHITE,Transparency=.75,Thickness=1},wheelCenter)
+new("TextLabel",{
+    AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
+    Size=UDim2.new(1,-12,0,28),BackgroundTransparency=1,
+    Text="SYLLINSE",TextColor3=BG,Font=Enum.Font.GothamBlack,
+    TextSize=11,ZIndex=36
+},wheelCenter)
+new("TextLabel",{
+    AnchorPoint=Vector2.new(.5,1),Position=UDim2.new(.5,0,1,-10),
+    Size=UDim2.new(1,-24,0,18),BackgroundTransparency=1,
+    Text="TAP OR DRAG AROUND THE WHEEL",TextColor3=MUTED,
+    Font=Enum.Font.GothamBold,TextSize=8,ZIndex=32
+},picker)
 
-local hueBar=new("Frame",{
-    Position=UDim2.fromOffset(9,36),Size=UDim2.new(1,-18,0,18),
-    BackgroundColor3=WHITE,BorderSizePixel=0,ZIndex=11
-},popup)
-corner(hueBar,8)
-new("UIGradient",{
-    Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(255,0,0)),
-        ColorSequenceKeypoint.new(.17,Color3.fromRGB(255,255,0)),
-        ColorSequenceKeypoint.new(.33,Color3.fromRGB(0,255,0)),
-        ColorSequenceKeypoint.new(.5,Color3.fromRGB(0,255,255)),
-        ColorSequenceKeypoint.new(.67,Color3.fromRGB(0,0,255)),
-        ColorSequenceKeypoint.new(.83,Color3.fromRGB(255,0,255)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(255,0,0))
-    })
-},hueBar)
-local hueKnob=new("Frame",{
-    Position=UDim2.new(.12,-5,.5,-5),Size=UDim2.fromOffset(10,28),
-    BackgroundColor3=WHITE,BorderSizePixel=0,ZIndex=12
-},hueBar)
-corner(hueKnob,6)
-new("UIStroke",{Color=Color3.new(0,0,0),Thickness=1},hueKnob)
-
-local hue, sliderDragging = .12, false
+local hue,wheelDragging=.12,false
 local function applyAccent(color)
     ACCENT=color
-    tween(logo,.12,{TextColor3=color})
-    tween(themeButton,.12,{TextColor3=color})
-    tween(mainStroke,.12,{Color=color})
+    tween(logo,.16,{TextColor3=color})
+    tween(themeButton,.16,{TextColor3=color})
+    tween(mainStroke,.16,{Color=color})
+    tween(pickerStroke,.16,{Color=color})
+    tween(wheelCenter,.16,{BackgroundColor3=color})
     for _,data in pairs(tabs) do
-        tween(data.indicator,.12,{BackgroundColor3=color})
-        if data.name==currentTab then tween(data.button,.12,{TextColor3=color}) end
+        tween(data.indicator,.16,{BackgroundColor3=color})
+        if data.name==currentTab then tween(data.button,.16,{TextColor3=color}) end
     end
     for _,obj in ipairs(gui:GetDescendants()) do
         if obj:IsA("UIStroke") then obj.Color=color end
@@ -425,68 +456,102 @@ local function applyAccent(color)
     sessionValue.TextColor3=color
     launchValue.TextColor3=color
 end
-local function setHue(x)
-    local width=math.max(1,hueBar.AbsoluteSize.X)
-    hue=math.clamp((x-hueBar.AbsolutePosition.X)/width,0,1)
-    hueKnob.Position=UDim2.new(hue,-5,.5,-5)
-    applyAccent(Color3.fromHSV(hue,.72,.83))
+local function setWheelColor(point)
+    local center=wheel.AbsolutePosition+wheel.AbsoluteSize/2
+    local delta=point-center
+    local angle=math.atan2(delta.Y,delta.X)
+    hue=(angle/(math.pi*2)+.25)%1
+    local radius=math.clamp(delta.Magnitude/(wheel.AbsoluteSize.X/2),.18,1)
+    applyAccent(Color3.fromHSV(hue,math.clamp(.35+radius*.62,.35,.97),.96))
 end
-hueBar.InputBegan:Connect(function(input)
+local function openPicker()
+    if picker.Visible then return end
+    main.Visible=false
+    picker.Visible=true
+    pickerShade.Visible=true
+    pickerShade.BackgroundTransparency=1
+    tween(pickerShade,.24,{BackgroundTransparency=.28})
+    picker.Size=UDim2.fromOffset(250,270)
+    picker.BackgroundTransparency=1
+    tween(picker,.28,{Size=UDim2.fromOffset(280,300),BackgroundTransparency=0},Enum.EasingStyle.Back)
+end
+local function closePicker()
+    if not picker.Visible then return end
+    tween(pickerShade,.2,{BackgroundTransparency=1})
+    tween(picker,.18,{Size=UDim2.fromOffset(250,270),BackgroundTransparency=1})
+    task.delay(.2,function()
+        picker.Visible=false
+        pickerShade.Visible=false
+        main.Visible=true
+        picker.Size=UDim2.fromOffset(280,300)
+        picker.BackgroundTransparency=0
+    end)
+end
+themeButton.Activated:Connect(openPicker)
+pickerClose.Activated:Connect(closePicker)
+wheel.InputBegan:Connect(function(input)
     if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
-        sliderDragging=true
-        setHue(input.Position.X)
-    end
-end)
-hueKnob.InputBegan:Connect(function(input)
-    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
-        sliderDragging=true
+        wheelDragging=true
+        setWheelColor(input.Position)
     end
 end)
 UIS.InputChanged:Connect(function(input)
-    if sliderDragging and (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseMovement) then
-        setHue(input.Position.X)
+    if wheelDragging and (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseMovement) then
+        setWheelColor(input.Position)
     end
 end)
 UIS.InputEnded:Connect(function(input)
-    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
-        sliderDragging=false
-    end
+    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then wheelDragging=false end
 end)
-themeButton.Activated:Connect(function() popup.Visible=not popup.Visible end)
 
--- Tab transitions: use per-object transparency, not nested CanvasGroups.
+-- Tabs slide horizontally and support left/right touch swipes.
 local currentTab="Home"
 local switching=false
-local pageFadeTargets={}
-for name,page in pairs(pages) do pageFadeTargets[name]=collectFadeTargets(page) end
-local function switchTab(name)
-    if switching or currentTab==name then return end
+local tabOrder={"Home","Player","Visuals","Settings","About"}
+local tabPositions={}
+for i,name in ipairs(tabOrder) do tabPositions[name]=i end
+local function switchTab(name,direction)
+    if switching or currentTab==name or not pages[name] then return end
     switching=true
-    local oldName=currentTab
+    direction=direction or (tabPositions[name]>tabPositions[currentTab] and 1 or -1)
     for tabName,data in pairs(tabs) do
         local selected=tabName==name
         tween(data.button,.22,{BackgroundColor3=selected and CARD or PANEL,TextColor3=selected and ACCENT or MUTED})
-        tween(data.indicator,.24,{
-            Size=UDim2.new(0,3,0,selected and 19 or 0),
-            Position=UDim2.fromOffset(0,selected and 8 or 17)
-        })
+        tween(data.indicator,.24,{Size=UDim2.new(0,3,0,selected and 19 or 0),Position=UDim2.fromOffset(0,selected and 8 or 17)})
     end
-    setFade(pageFadeTargets[oldName],1,.18)
-    task.wait(.19)
-    pages[oldName].Visible=false
+    local oldPage,newPage=pages[currentTab],pages[name]
+    local width=math.max(content.AbsoluteSize.X,200)
+    newPage.Position=UDim2.new(0,direction*width,0,39)
+    newPage.Visible=true
     currentTab=name
     heading.Text=name
-    pages[name].Visible=true
-    setFade(pageFadeTargets[name],1,0)
-    setFade(pageFadeTargets[name],0,.34)
-    task.wait(.35)
+    tween(oldPage,.27,{Position=UDim2.new(0,-direction*width,0,39)})
+    local slide=tween(newPage,.27,{Position=UDim2.fromOffset(0,39)})
+    slide.Completed:Wait()
+    oldPage.Visible=false
+    oldPage.Position=UDim2.fromOffset(0,39)
     switching=false
 end
-
 for name,data in pairs(tabs) do
     data.name=name
     data.button.Activated:Connect(function() switchTab(name) end)
 end
+local swipeStart=nil
+UIS.InputBegan:Connect(function(input,processed)
+    if processed or not main.Visible or picker.Visible or input.UserInputType~=Enum.UserInputType.Touch then return end
+    local p=input.Position
+    local pos,size=content.AbsolutePosition,content.AbsoluteSize
+    if p.X>=pos.X and p.X<=pos.X+size.X and p.Y>=pos.Y and p.Y<=pos.Y+size.Y then swipeStart=p end
+end)
+UIS.InputEnded:Connect(function(input)
+    if not swipeStart or input.UserInputType~=Enum.UserInputType.Touch then return end
+    local delta=input.Position-swipeStart
+    if math.abs(delta.X)>75 and math.abs(delta.X)>math.abs(delta.Y)*1.25 then
+        local index=math.clamp(tabPositions[currentTab]+(delta.X<0 and 1 or -1),1,#tabOrder)
+        switchTab(tabOrder[index],delta.X<0 and 1 or -1)
+    end
+    swipeStart=nil
+end)
 
 -- Floating reopen button
 local floating=new("TextButton",{
